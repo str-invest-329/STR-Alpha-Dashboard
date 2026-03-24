@@ -217,7 +217,7 @@
       <div class="tab active" onclick="switchTab('holdings')">帳戶持倉</div>
       <div class="tab" onclick="switchTab('stocks')">標的彙總</div>
       <div class="tab" onclick="switchTab('accounts')">帳戶狀態</div>
-      <div class="tab" onclick="switchTab('trades')">交易紀錄</div>
+      <div class="tab" onclick="switchTab('trades')">交易紀錄 ↗</div>
     </div>
     <div class="tab-content" id="tabContent">
       <div class="loading">載入中...</div>
@@ -417,13 +417,17 @@ function switchTab(tab) {
 
 function renderTable() {
   var market = document.getElementById("marketFilter").value;
-  var html = "";
 
+  if (currentTab === "trades") {
+    renderTradesTable(market); // async，自己處理 DOM
+    return;
+  }
+
+  var html = "";
   switch (currentTab) {
     case "holdings": html = renderHoldingsTable(market); break;
     case "stocks": html = renderStocksTable(market); break;
     case "accounts": html = renderAccountsTable(market); break;
-    case "trades": html = renderTradesTable(market); break;
   }
 
   document.getElementById("tabContent").innerHTML = html;
@@ -446,8 +450,8 @@ function renderHoldingsTable(market) {
       '<td class="right">' + fmtCurrency(num(e["現價"])) + '</td>' +
       '<td class="right">' + fmtCurrency(num(e["持倉市值"])) + '</td>' +
       '<td class="right ' + valCls(pnl) + '">' + fmtCurrency(pnl) + '</td>' +
-      '<td class="right ' + valCls(pnl) + '">' + e["未實現報酬率"] + '</td>' +
-      '<td class="right">' + e["持倉占比"] + '</td>' +
+      '<td class="right ' + valCls(pnl) + '">' + fmtPercent(num(e["未實現報酬率"])) + '</td>' +
+      '<td class="right">' + fmtPercent(num(e["持倉占比"])) + '</td>' +
       '</tr>';
   });
 
@@ -470,7 +474,7 @@ function renderStocksTable(market) {
       '<td class="right">' + fmtCurrency(num(e["總持有成本"])) + '</td>' +
       '<td class="right">' + fmtCurrency(num(e["總持倉市值"])) + '</td>' +
       '<td class="right ' + valCls(pnl) + '">' + fmtCurrency(pnl) + '</td>' +
-      '<td class="right ' + valCls(pnl) + '">' + e["未實現報酬率"] + '</td>' +
+      '<td class="right ' + valCls(pnl) + '">' + fmtPercent(num(e["未實現報酬率"])) + '</td>' +
       '<td class="right ' + valCls(rpnl) + '">' + fmtCurrency(rpnl) + '</td>' +
       '<td class="right">' + fmtCurrency(num(e["累計已實現股息"])) + '</td>' +
       '</tr>';
@@ -503,35 +507,50 @@ function renderAccountsTable(market) {
   return html;
 }
 
-function renderTradesTable(market) {
-  if (!DATA.trade_events) return '<div class="loading">交易紀錄需要額外載入</div>';
-  var data = DATA.trade_events;
-  if (market !== "ALL") {
-    data = data.filter(function(t) {
-      return (market === "美股" && t["幣別"] === "USD") || (market === "台股" && t["幣別"] === "TWD");
+async function renderTradesTable(market) {
+  // 點擊時才從 API 載入交易紀錄
+  document.getElementById("tabContent").innerHTML = '<div class="loading">載入交易紀錄中...</div>';
+
+  try {
+    var trades;
+    if (!API_URL) {
+      trades = getDemoData().trade_events;
+    } else {
+      var res = await fetch(API_URL + "?action=trades");
+      var result = await res.json();
+      trades = result.trade_events || [];
+    }
+
+    if (market !== "ALL") {
+      trades = trades.filter(function(t) {
+        return (market === "美股" && t["幣別"] === "USD") || (market === "台股" && t["幣別"] === "TWD");
+      });
+    }
+
+    var html = '<table><tr><th>日期</th><th>銀行</th><th>帳戶</th><th>幣別</th><th>標的</th><th>方向</th><th class="right">價格</th><th class="right">股數</th><th class="right">手續費</th><th class="right">成交金額</th></tr>';
+
+    trades.forEach(function(t) {
+      var isBuy = t["方向"] === "買";
+      html += '<tr>' +
+        '<td>' + t["日期"] + '</td>' +
+        '<td>' + t["銀行"] + '</td>' +
+        '<td><span class="badge badge-account">' + t["帳戶名"] + '</span></td>' +
+        '<td>' + t["幣別"] + '</td>' +
+        '<td><strong style="color:var(--primary-light)">' + t["標的"] + '</strong></td>' +
+        '<td><span class="badge ' + (isBuy ? 'badge-buy' : 'badge-sell') + '">' + t["方向"] + '</span></td>' +
+        '<td class="right">' + fmtCurrency(num(t["價格"])) + '</td>' +
+        '<td class="right">' + fmtNum(num(t["股數"])) + '</td>' +
+        '<td class="right">' + fmtCurrency(num(t["手續費"])) + '</td>' +
+        '<td class="right">' + fmtCurrency(num(t["成交金額"])) + '</td>' +
+        '</tr>';
     });
+
+    html += '</table>';
+    html += '<div class="footer-note">共 ' + trades.length + ' 筆交易紀錄</div>';
+    document.getElementById("tabContent").innerHTML = html;
+  } catch (err) {
+    document.getElementById("tabContent").innerHTML = '<div class="error">載入失敗: ' + err.message + '</div>';
   }
-
-  var html = '<table><tr><th>日期</th><th>銀行</th><th>帳戶</th><th>標的</th><th>方向</th><th class="right">價格</th><th class="right">股數</th><th class="right">手續費</th><th class="right">成交金額</th></tr>';
-
-  data.forEach(function(t) {
-    var isBuy = t["方向"] === "買";
-    html += '<tr>' +
-      '<td>' + t["日期"] + '</td>' +
-      '<td>' + t["銀行"] + '</td>' +
-      '<td><span class="badge badge-account">' + t["帳戶名"] + '</span></td>' +
-      '<td><strong style="color:var(--primary-light)">' + t["標的"] + '</strong></td>' +
-      '<td><span class="badge ' + (isBuy ? 'badge-buy' : 'badge-sell') + '">' + t["方向"] + '</span></td>' +
-      '<td class="right">' + fmtCurrency(num(t["價格"])) + '</td>' +
-      '<td class="right">' + fmtNum(num(t["股數"])) + '</td>' +
-      '<td class="right">' + fmtCurrency(num(t["手續費"])) + '</td>' +
-      '<td class="right">' + fmtCurrency(num(t["成交金額"])) + '</td>' +
-      '</tr>';
-  });
-
-  html += '</table>';
-  html += '<div class="footer-note">共 ' + data.length + ' 筆交易紀錄</div>';
-  return html;
 }
 
 // ===== 輔助函數 =====
@@ -658,19 +677,6 @@ function getDemoData() {
       {"銀行":"元大","帳戶名":"D","幣別":"TWD","是否投資帳戶":true},
       {"銀行":"元大","帳戶名":"B","幣別":"TWD","是否投資帳戶":false},
       {"銀行":"上海","帳戶名":"C","幣別":"TWD","是否投資帳戶":false}
-    ],
-    trade_events: [
-      {"日期":"2025/10/21","銀行":"元大","帳戶名":"B","幣別":"USD","標的":"甲股","方向":"買","價格":400,"股數":175,"手續費":70,"成交金額":70070},
-      {"日期":"2025/11/21","銀行":"上海","帳戶名":"C","幣別":"USD","標的":"甲股","方向":"買","價格":282.96,"股數":1030,"手續費":437.17,"成交金額":291885.97},
-      {"日期":"2025/11/26","銀行":"上海","帳戶名":"C","幣別":"USD","標的":"甲股","方向":"賣","價格":254,"股數":1030,"手續費":402.02,"成交金額":261217.98},
-      {"日期":"2025/11/26","銀行":"元大","帳戶名":"B","幣別":"USD","標的":"甲股","方向":"賣","價格":254,"股數":175,"手續費":44.45,"成交金額":44405.55},
-      {"日期":"2025/12/10","銀行":"上海","帳戶名":"B","幣別":"USD","標的":"甲股","方向":"買","價格":260,"股數":680,"手續費":265.2,"成交金額":177065.2},
-      {"日期":"2025/12/11","銀行":"元大","帳戶名":"D","幣別":"TWD","標的":"丁股","方向":"買","價格":111.5,"股數":50000,"手續費":4766,"成交金額":5579766},
-      {"日期":"2025/12/12","銀行":"元大","帳戶名":"D","幣別":"TWD","標的":"丁股","方向":"買","價格":111,"股數":50000,"手續費":4745,"成交金額":5554745},
-      {"日期":"2025/12/12","銀行":"上海","帳戶名":"B","幣別":"USD","標的":"甲股","方向":"買","價格":272.17,"股數":550,"手續費":224.54,"成交金額":149918.04},
-      {"日期":"2026/02/02","銀行":"上海","帳戶名":"B","幣別":"USD","標的":"丙股","方向":"買","價格":587.96,"股數":315,"手續費":277.81,"成交金額":185485.21},
-      {"日期":"2026/02/12","銀行":"元大","帳戶名":"A","幣別":"USD","標的":"乙股","方向":"買","價格":423.28,"股數":200,"手續費":84.66,"成交金額":84740.66},
-      {"日期":"2026/02/13","銀行":"上海","帳戶名":"B","幣別":"USD","標的":"甲股","方向":"賣","價格":186.25,"股數":830,"手續費":231.88,"成交金額":154355.62}
     ],
     timestamp: new Date().toISOString(),
     status: "ok"
