@@ -7,21 +7,21 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --primary: #1a3a6b;
-      --primary-light: #2556a0;
-      --cyan: #0dcaf0;
-      --green: #198754;
-      --red: #dc3545;
-      --orange: #fd7e14;
-      --purple: #6f42c1;
-      --teal: #17a2b8;
-      --gray: #6c757d;
-      --dark-gray: #495057;
-      --light-gray: #f8f9fa;
-      --subtle-gray: #f1f3f8;
-      --border: #dee2e6;
+      --primary: #5a3e36;
+      --primary-light: #7a5c52;
+      --cyan: #9FDFB4;
+      --green: #4a9e6b;
+      --red: #c0735e;
+      --orange: #DFAE9F;
+      --purple: #8b7355;
+      --teal: #6bbf8a;
+      --gray: #8a8070;
+      --dark-gray: #5a524a;
+      --light-gray: #f7f5f0;
+      --subtle-gray: #f0ede6;
+      --border: #d8d2c8;
       --bg-card: #ffffff;
-      --bg-badge: #e8eef7;
+      --bg-badge: #f0ede6;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,7 +35,7 @@
 
     /* === Top Bar === */
     .topbar {
-      background: var(--primary);
+      background: linear-gradient(135deg, #5a3e36, #7a5c52);
       color: white;
       padding: 12px 24px;
       display: flex;
@@ -145,8 +145,8 @@
     .right { text-align: right; }
 
     /* === Value Colors === */
-    .positive { color: var(--green); }
-    .negative { color: var(--red); }
+    .positive { color: #4a9e6b; }
+    .negative { color: #c0735e; }
     .neutral { color: var(--gray); }
 
     /* === Badges === */
@@ -156,9 +156,9 @@
       border-radius: 12px;
       font-size: 0.76rem;
     }
-    .badge-account { background: var(--bg-badge); color: var(--primary); }
-    .badge-buy { background: #d4edda; color: #155724; border-radius: 4px; padding: 1px 7px; font-size: 0.74rem; }
-    .badge-sell { background: #f8d7da; color: #721c24; border-radius: 4px; padding: 1px 7px; font-size: 0.74rem; }
+    .badge-account { background: #f0ede6; color: #5a3e36; }
+    .badge-buy { background: #d5f0de; color: #2d6b42; border-radius: 4px; padding: 1px 7px; font-size: 0.74rem; }
+    .badge-sell { background: #f5ddd6; color: #7a3e2e; border-radius: 4px; padding: 1px 7px; font-size: 0.74rem; }
 
     /* === Loading === */
     .loading { text-align: center; padding: 60px; color: var(--gray); font-size: 1rem; }
@@ -239,8 +239,8 @@ var DATA = null;
 var currentTab = "holdings";
 
 // ===== 顏色 =====
-var COLORS = ["#1a3a6b", "#2556a0", "#28a745", "#fd7e14", "#6f42c1", "#17a2b8", "#ffc107", "#dc3545", "#20c997"];
-var KPI_BORDERS = ["#1a3a6b", "#1a3a6b", "#0dcaf0", "#198754", "#fd7e14", "#6f42c1"];
+var COLORS = ["#DFAE9F", "#9FDFB4", "#E4DDAF", "#E0CDA3", "#c0735e", "#6bbf8a", "#8b7355", "#7a5c52", "#b8a88a"];
+var KPI_BORDERS = ["#5a3e36", "#7a5c52", "#9FDFB4", "#4a9e6b", "#DFAE9F", "#E0CDA3"];
 
 // ===== Chart 實例 =====
 var pieChartInstance = null;
@@ -392,9 +392,9 @@ function renderBarChart() {
     data: {
       labels: labels,
       datasets: [
-        { label: "持倉成本", data: costData, backgroundColor: "#1a3a6b" },
-        { label: "持倉市值", data: marketData, backgroundColor: "#2556a0" },
-        { label: "未實現損益", data: pnlData, backgroundColor: pnlData.map(function(v) { return v >= 0 ? "#28a745" : "#dc3545"; }) }
+        { label: "持倉成本", data: costData, backgroundColor: "#E0CDA3" },
+        { label: "持倉市值", data: marketData, backgroundColor: "#9FDFB4" },
+        { label: "未實現損益", data: pnlData, backgroundColor: pnlData.map(function(v) { return v >= 0 ? "#4a9e6b" : "#c0735e"; }) }
       ]
     },
     options: {
