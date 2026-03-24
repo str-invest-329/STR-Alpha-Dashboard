@@ -538,7 +538,13 @@ function renderTradesTable(market) {
 function num(v) {
   if (typeof v === "number") return v;
   if (!v || v === "-" || v === "") return 0;
-  return parseFloat(String(v).replace(/[$,\s()]/g, function(m) { return m === "(" ? "-" : ""; }).replace(")", "")) || 0;
+  var s = String(v);
+  // 百分比字串：去掉 % 後除以 100，還原為小數
+  if (s.includes("%")) {
+    var cleaned = s.replace(/[%,\s()]/g, function(m) { return m === "(" ? "-" : ""; }).replace(")", "");
+    return (parseFloat(cleaned) || 0) / 100;
+  }
+  return parseFloat(s.replace(/[$,\s()]/g, function(m) { return m === "(" ? "-" : ""; }).replace(")", "")) || 0;
 }
 
 function fmtCurrency(n) {
@@ -553,6 +559,7 @@ function fmtNum(n) { return n.toLocaleString("en-US"); }
 
 function fmtPercent(n) {
   if (typeof n === "string" && n.includes("%")) return n;
+  // n 永遠是小數（如 -0.029），乘 100 轉百分比
   return (n >= 0 ? "+" : "") + (n * 100).toFixed(2) + "%";
 }
 
