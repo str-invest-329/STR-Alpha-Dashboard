@@ -7,21 +7,21 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --primary: #1a3a6b;
-      --primary-light: #2556a0;
-      --cyan: #0dcaf0;
-      --green: #198754;
-      --red: #dc3545;
-      --orange: #fd7e14;
-      --purple: #6f42c1;
-      --teal: #17a2b8;
-      --gray: #6c757d;
-      --dark-gray: #495057;
-      --light-gray: #f8f9fa;
-      --subtle-gray: #f1f3f8;
-      --border: #dee2e6;
+      --primary: #2B2D42;
+      --primary-light: #8D99AE;
+      --cyan: #8D99AE;
+      --green: #2B8A5E;
+      --red: #D90429;
+      --orange: #EF233C;
+      --purple: #2B2D42;
+      --teal: #8D99AE;
+      --gray: #8D99AE;
+      --dark-gray: #2B2D42;
+      --light-gray: #EDF2F4;
+      --subtle-gray: #e4e9ec;
+      --border: #d0d5d9;
       --bg-card: #ffffff;
-      --bg-badge: #e8eef7;
+      --bg-badge: #e4e9ec;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,7 +35,7 @@
 
     /* === Top Bar === */
     .topbar {
-      background: var(--primary);
+      background: #2B2D42;
       color: white;
       padding: 12px 24px;
       display: flex;
@@ -145,8 +145,8 @@
     .right { text-align: right; }
 
     /* === Value Colors === */
-    .positive { color: var(--green); }
-    .negative { color: var(--red); }
+    .positive { color: #2B8A5E; }
+    .negative { color: #D90429; }
     .neutral { color: var(--gray); }
 
     /* === Badges === */
@@ -156,9 +156,9 @@
       border-radius: 12px;
       font-size: 0.76rem;
     }
-    .badge-account { background: var(--bg-badge); color: var(--primary); }
-    .badge-buy { background: #d4edda; color: #155724; border-radius: 4px; padding: 1px 7px; font-size: 0.74rem; }
-    .badge-sell { background: #f8d7da; color: #721c24; border-radius: 4px; padding: 1px 7px; font-size: 0.74rem; }
+    .badge-account { background: #e4e9ec; color: #2B2D42; }
+    .badge-buy { background: #d4eddf; color: #1a5a3a; border-radius: 4px; padding: 1px 7px; font-size: 0.74rem; }
+    .badge-sell { background: #fdd; color: #9a0020; border-radius: 4px; padding: 1px 7px; font-size: 0.74rem; }
 
     /* === Loading === */
     .loading { text-align: center; padding: 60px; color: var(--gray); font-size: 1rem; }
@@ -217,7 +217,6 @@
       <div class="tab active" onclick="switchTab('holdings')">帳戶持倉</div>
       <div class="tab" onclick="switchTab('stocks')">標的彙總</div>
       <div class="tab" onclick="switchTab('accounts')">帳戶狀態</div>
-      <div class="tab" onclick="switchTab('trades')">交易紀錄 ↗</div>
     </div>
     <div class="tab-content" id="tabContent">
       <div class="loading">載入中...</div>
@@ -239,8 +238,8 @@ var DATA = null;
 var currentTab = "holdings";
 
 // ===== 顏色 =====
-var COLORS = ["#1a3a6b", "#2556a0", "#28a745", "#fd7e14", "#6f42c1", "#17a2b8", "#ffc107", "#dc3545", "#20c997"];
-var KPI_BORDERS = ["#1a3a6b", "#1a3a6b", "#0dcaf0", "#198754", "#fd7e14", "#6f42c1"];
+var COLORS = ["#2B2D42", "#8D99AE", "#EF233C", "#D90429", "#3d4060", "#a8b2c0", "#ff4d5e", "#1a1b2e", "#c0c8d4"];
+var KPI_BORDERS = ["#2B2D42", "#2B2D42", "#8D99AE", "#2B8A5E", "#EF233C", "#D90429"];
 
 // ===== Chart 實例 =====
 var pieChartInstance = null;
@@ -392,9 +391,9 @@ function renderBarChart() {
     data: {
       labels: labels,
       datasets: [
-        { label: "持倉成本", data: costData, backgroundColor: "#1a3a6b" },
-        { label: "持倉市值", data: marketData, backgroundColor: "#2556a0" },
-        { label: "未實現損益", data: pnlData, backgroundColor: pnlData.map(function(v) { return v >= 0 ? "#28a745" : "#dc3545"; }) }
+        { label: "持倉成本", data: costData, backgroundColor: "#8D99AE" },
+        { label: "持倉市值", data: marketData, backgroundColor: "#2B2D42" },
+        { label: "未實現損益", data: pnlData, backgroundColor: pnlData.map(function(v) { return v >= 0 ? "#2B8A5E" : "#D90429"; }) }
       ]
     },
     options: {
@@ -417,13 +416,8 @@ function switchTab(tab) {
 
 function renderTable() {
   var market = document.getElementById("marketFilter").value;
-
-  if (currentTab === "trades") {
-    renderTradesTable(market); // async，自己處理 DOM
-    return;
-  }
-
   var html = "";
+
   switch (currentTab) {
     case "holdings": html = renderHoldingsTable(market); break;
     case "stocks": html = renderStocksTable(market); break;
@@ -507,51 +501,6 @@ function renderAccountsTable(market) {
   return html;
 }
 
-async function renderTradesTable(market) {
-  // 點擊時才從 API 載入交易紀錄
-  document.getElementById("tabContent").innerHTML = '<div class="loading">載入交易紀錄中...</div>';
-
-  try {
-    var trades;
-    if (!API_URL) {
-      trades = getDemoData().trade_events;
-    } else {
-      var res = await fetch(API_URL + "?action=trades");
-      var result = await res.json();
-      trades = result.trade_events || [];
-    }
-
-    if (market !== "ALL") {
-      trades = trades.filter(function(t) {
-        return (market === "美股" && t["幣別"] === "USD") || (market === "台股" && t["幣別"] === "TWD");
-      });
-    }
-
-    var html = '<table><tr><th>日期</th><th>銀行</th><th>帳戶</th><th>幣別</th><th>標的</th><th>方向</th><th class="right">價格</th><th class="right">股數</th><th class="right">手續費</th><th class="right">成交金額</th></tr>';
-
-    trades.forEach(function(t) {
-      var isBuy = t["方向"] === "買";
-      html += '<tr>' +
-        '<td>' + t["日期"] + '</td>' +
-        '<td>' + t["銀行"] + '</td>' +
-        '<td><span class="badge badge-account">' + t["帳戶名"] + '</span></td>' +
-        '<td>' + t["幣別"] + '</td>' +
-        '<td><strong style="color:var(--primary-light)">' + t["標的"] + '</strong></td>' +
-        '<td><span class="badge ' + (isBuy ? 'badge-buy' : 'badge-sell') + '">' + t["方向"] + '</span></td>' +
-        '<td class="right">' + fmtCurrency(num(t["價格"])) + '</td>' +
-        '<td class="right">' + fmtNum(num(t["股數"])) + '</td>' +
-        '<td class="right">' + fmtCurrency(num(t["手續費"])) + '</td>' +
-        '<td class="right">' + fmtCurrency(num(t["成交金額"])) + '</td>' +
-        '</tr>';
-    });
-
-    html += '</table>';
-    html += '<div class="footer-note">共 ' + trades.length + ' 筆交易紀錄</div>';
-    document.getElementById("tabContent").innerHTML = html;
-  } catch (err) {
-    document.getElementById("tabContent").innerHTML = '<div class="error">載入失敗: ' + err.message + '</div>';
-  }
-}
 
 // ===== 輔助函數 =====
 function num(v) {
