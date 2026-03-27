@@ -1136,12 +1136,17 @@ function renderMarketTable() {
   cols.forEach(function(c) { html += '<th>' + c + '</th>'; });
   html += '</tr>';
 
+  var pctCols = {"總損益率":1, "股票倉位":1, "現金倉位":1, "未實現總損益率":1, "已實現總損益率":1};
+
   data.forEach(function(row) {
     html += '<tr>';
     cols.forEach(function(c) {
       var v = row[c];
       if (c === "市場") {
         html += '<td><strong>' + v + '</strong></td>';
+      } else if (pctCols[c]) {
+        var n = num(v);
+        html += '<td class="right ' + valCls(n) + '">' + fmtPercent(n) + '</td>';
       } else if (typeof v === "string" && v.includes("%")) {
         html += '<td class="right ' + valCls(num(v)) + '">' + v + '</td>';
       } else if (typeof v === "number" || (typeof v === "string" && v.includes("$"))) {
