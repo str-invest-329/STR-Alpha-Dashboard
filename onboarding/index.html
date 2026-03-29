@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STR Alpha — 新成員上手指南</title>
+<style>
+  :root {
+    --pink: #ffb5e8;
+    --green: #b9fbc0;
+    --blue: #a0c4ff;
+    --purple: #cfbaf0;
+    --yellow: #fdffb6;
+    --black: #1a1a1a;
+    --white: #fff;
+    --bg: #fcfcfc;
+    --radius: 12px;
+    --shadow: 4px 4px 0px 0px var(--black);
+    --shadow-sm: 2px 2px 0px 0px var(--black);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--purple);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .container {
+    max-width: 1280px;
+    width: 100%;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card {
+    background: var(--white);
+    border: 2px solid var(--black);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  /* Header */
+  .header {
+    background: var(--pink);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header h1 {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--black);
+  }
+  .step-badge {
+    background: var(--white);
+    border: 2px solid var(--black);
+    border-radius: 999px;
+    padding: 0.25rem 1rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+  }
+
+  /* Content */
+  .content {
+    flex: 1;
+    background: rgba(160, 196, 255, 0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .content-inner {
+    flex: 1;
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    overflow: hidden;
+  }
+
+  /* Left: text */
+  .text-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+  .text-panel::-webkit-scrollbar { width: 6px; }
+  .text-panel::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 3px; }
+
+  .step-title {
+    font-size: 1.5rem;
+    font-weight: 900;
+    background: var(--green);
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    box-shadow: var(--shadow-sm);
+    transform: rotate(-1deg);
+    margin-bottom: 1rem;
+  }
+  .step-desc {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--black);
+  }
+  .step-desc ol {
+    padding-left: 1.5rem;
+    margin: 0.75rem 0;
+  }
+  .step-desc li {
+    margin-bottom: 0.5rem;
+  }
+  .step-desc strong {
+    font-weight: 900;
+    background: var(--yellow);
+    padding: 0 0.25rem;
+    border-bottom: 2px solid var(--black);
+  }
+  .step-desc a {
+    color: #2563eb;
+    font-weight: 700;
+    text-decoration: underline;
+  }
+  .step-desc a:hover { color: #1d4ed8; }
+  .step-desc code {
+    background: var(--purple);
+    border: 2px solid var(--black);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-weight: 700;
+    font-size: 0.85em;
+    box-shadow: var(--shadow-sm);
+  }
+  .step-desc .prompt-block {
+    background: var(--black);
+    color: #e0e0e0;
+    border: 2px solid var(--black);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.75rem 0;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    position: relative;
+    box-shadow: var(--shadow);
+  }
+  .prompt-block .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--yellow);
+    color: var(--black);
+    border: 2px solid var(--black);
+    border-radius: 6px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s;
+  }
+  .prompt-block .copy-btn:hover { background: var(--green); }
+  .prompt-block .copy-btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+  .step-desc .note {
+    background: var(--yellow);
+    border: 2px solid var(--black);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0.75rem 0;
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Right: image */
+  .image-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
+  }
+  .image-main {
+    flex: 1;
+    background: #f5f5f5;
+    border: 2px solid var(--black);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    min-height: 0;
+    cursor: zoom-in;
+    position: relative;
+  }
+  .image-main img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: opacity 0.2s;
+  }
+  .image-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .image-nav .arrow {
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--black);
+    border-radius: 50%;
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: 900;
+    font-size: 1rem;
+    transition: all 0.15s;
+  }
+  .image-nav .arrow:hover { background: var(--yellow); }
+  .image-nav .arrow:active { transform: translate(2px, 2px); box-shadow: none; }
+  .image-nav .arrow:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+  .image-dots {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .image-dots .dot {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--black);
+    border-radius: 50%;
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .image-dots .dot:hover { background: var(--blue); transform: scale(1.1); }
+  .image-dots .dot.active { background: var(--pink); transform: scale(1.25); box-shadow: var(--shadow-sm); }
+  .no-images {
+    color: #999;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  /* Nav bar */
+  .nav-bar {
+    background: var(--white);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .nav-btn {
+    border: 2px solid var(--black);
+    border-radius: var(--radius);
+    padding: 0.5rem 1.5rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .nav-btn:hover { box-shadow: var(--shadow-sm); transform: translate(1px, 1px); }
+  .nav-btn:active { box-shadow: none; transform: translate(4px, 4px); }
+  .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; transform: none; }
+  .nav-btn.prev { background: var(--yellow); }
+  .nav-btn.next { background: var(--green); }
+  .nav-dots {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .nav-dots .dot {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--black);
+    border-radius: 50%;
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-dots .dot:hover { background: var(--blue); transform: scale(1.1); }
+  .nav-dots .dot.active { background: var(--black); transform: scale(1.25); }
+
+  /* Zoom overlay */
+  .zoom-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+    padding: 2rem;
+  }
+  .zoom-overlay.show { display: flex; }
+  .zoom-overlay img {
+    max-width: 95%;
+    max-height: 95%;
+    object-fit: contain;
+    border-radius: var(--radius);
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { height: auto; min-height: 100vh; }
+    .content-inner { flex-direction: column; overflow-y: auto; }
+    .image-panel { min-height: 300px; }
+    .nav-dots { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header card">
+    <h1>STR Alpha — 新成員上手指南</h1>
+    <span class="step-badge" id="stepBadge">Step 1 / 8</span>
+  </div>
+
+  <div class="content card">
+    <div class="content-inner">
+      <div class="text-panel" id="textPanel"></div>
+      <div class="image-panel" id="imagePanel">
+        <div class="image-main" id="imageMain" onclick="zoomImage()">
+          <img id="mainImg" src="" alt="">
+        </div>
+        <div class="image-nav">
+          <button class="arrow" id="imgPrev" onclick="changeImage(-1)">‹</button>
+          <div class="image-dots" id="imgDots"></div>
+          <button class="arrow" id="imgNext" onclick="changeImage(1)">›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-bar card">
+    <button class="nav-btn prev" id="prevBtn" onclick="changeStep(-1)">‹ 上一步</button>
+    <div class="nav-dots" id="navDots"></div>
+    <button class="nav-btn next" id="nextBtn" onclick="changeStep(1)">下一步 ›</button>
+  </div>
+</div>
+
+<div class="zoom-overlay" id="zoomOverlay" onclick="closeZoom()">
+  <img id="zoomImg" src="" alt="">
+</div>
+
+<script>
+const steps = [
+  {
+    title: "1.1 安裝 Git",
+    description: `
+      <p>Claude Code 需要 Git 才能運行，這一步必須<strong>自己手動完成</strong>。</p>
+      <ol>
+        <li>先確認你的系統版本：在桌面左下角的 <strong>Windows Logo 點右鍵</strong>，選擇<strong>「系統」</strong></li>
+        <li>在系統資訊頁面，查看「系統類型」是 <strong>x64</strong> 還是 x86</li>
+        <li>打開 Chrome，進入 <a href="https://git-scm.com/download/win" target="_blank">git-scm.com/download/win</a></li>
+        <li>根據你的系統版本，下載對應的安裝檔（大多數電腦是 x64）</li>
+        <li>開啟下載的安裝檔，<strong>全部按「Next」直到結束</strong>，不需要改任何設定</li>
+      </ol>
+      <div class="note">💡 不確定有沒有裝成功？沒關係，等一下進到 Claude 之後，如果 Git 沒裝好，Claude 會自動提示你。</div>
+    `,
+    images: ["Assets/onboarding/1.1-1.jpg", "Assets/onboarding/1.1-2.jpg", "Assets/onboarding/1.1-3.jpg", "Assets/onboarding/1.1-4.jpg"]
+  },
+  {
+    title: "1.2 安裝 Claude Desktop",
+    description: `
+      <ol>
+        <li>打開 Chrome，進入 <a href="https://claude.ai/download" target="_blank">claude.ai/download</a></li>
+        <li>下載並安裝 Claude Desktop</li>
+        <li>開啟 Claude Desktop，登入你的 Anthropic 帳號</li>
+      </ol>
+      <div class="note">⚠️ Anthropic 帳號需要有訂閱（Pro 或 Max 方案），否則不會看到 Code 模式的選項。</div>
+      <div class="note">💡 右圖是 Git 尚未安裝時會出現的紅色提示。如果你看到這個畫面，請回到上一步完成 Git 安裝。</div>
+    `,
+    images: ["Assets/onboarding/1.2-1.jpg"]
+  },
+  {
+    title: "2.1 安裝所有開發工具",
+    description: `
+      <ol>
+        <li>開啟 Claude Desktop，切換到 <strong>Code 模式</strong>（上方 Tab）</li>
+      </ol>
+      <div class="note">⚠️ 後續與 Claude 的對話，都只會在 Code 模式下進行。</div>
+      <ol start="2">
+        <li>選擇一個資料夾作為專案根目錄，例如 <code>C:\\Users\\你的名稱\\Documents</code></li>
+        <li>把下列 Prompt 貼到對話框中：</li>
+      </ol>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>請幫我安裝以下開發工具，依序完成，每一步完成後告訴我結果：
+
+1. 安裝 Node.js：
+   winget install OpenJS.NodeJS.LTS
+   安裝完後驗證 node --version 和 npm --version
+
+2. 安裝 clasp（Google Apps Script 同步工具）：
+   npm install -g @google/clasp
+   安裝完後驗證 clasp --version
+
+3. 安裝 uv（Python 套件管理工具）：
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   安裝完後驗證 uvx --version
+
+4. 安裝 mcp-google-sheets：
+   uvx mcp-google-sheets --help
+   能看到說明訊息就代表安裝成功
+
+5. 全部完成後，列出所有工具的版本號讓我確認。</div>
+      <p>Claude 會逐步執行，中間如果需要你同意權限，按<strong>「允許」</strong>即可。</p>
+      <div class="note">⚠️ 後續的所有對話，只會在 Code 模式下進行。不要切回 Chat 模式。</div>
+    `,
+    images: ["Assets/onboarding/2.1-1.jpg", "Assets/onboarding/2.1-2.jpg"]
+  },
+  {
+    title: "2.2 GitHub 帳號設定",
+    description: `
+      <ol>
+        <li>如果你還沒有 GitHub 帳號，先到 <a href="https://github.com/signup" target="_blank">github.com/signup</a> 註冊一個</li>
+        <li>註冊完成後，跟 Claude 說：</li>
+      </ol>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>請幫我設定 Git 的使用者身份：
+GITHUB_USERNAME: 你的 GitHub 使用者名稱
+EMAIL: 你的 GitHub 註冊信箱</div>
+      <ol start="3">
+        <li>把 GitHub 使用者名稱提供給管理員，請管理員把專案的 GitHub repo 授權給你</li>
+        <li>你會在 GitHub 通知中收到邀請，點進去按 <strong>Accept invitation</strong></li>
+        <li>取得授權後，跟 Claude 說：</li>
+      </ol>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>請幫我 git clone https://github.com/str-invest-329/STR-Alpha</div>
+      <ol start="6">
+        <li>在授權視窗中選擇 <strong>「Sign in with your browser」</strong>，並登入你的 GitHub 帳號</li>
+        <li>登入成功後，Claude 會開始下載專案程式碼到你的電腦</li>
+        <li>Clone 完成後，就可以在本地的資料夾看到整個專案的程式碼</li>
+      </ol>
+    `,
+    images: ["Assets/onboarding/2.2-1.jpg", "Assets/onboarding/2.2-2.jpg", "Assets/onboarding/2.2-3.jpg", "Assets/onboarding/2.2-4.jpg", "Assets/onboarding/2.2-5.jpg", "Assets/onboarding/2.2-6.jpg", "Assets/onboarding/2.2-7.jpg"]
+  },
+  {
+    title: "2.3 clasp 設定",
+    description: `
+      <p>clasp 是把本地程式碼推送到 Google Sheet 綁定的 Apps Script 的工具。</p>
+      <ol>
+        <li><strong>登入 Google 帳號</strong>：跟 Claude 說</li>
+      </ol>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>請執行 clasp login</div>
+      <p>瀏覽器會自動開啟，用<strong>公司的 Google 帳號</strong>登入並授權。</p>
+      <div class="note">⚠️ 授權頁面請勾選<strong>「全選」</strong>，所有權限都要選起來，否則 clasp 無法運作。</div>
+      <ol start="2">
+        <li><strong>確認 Google Sheet 權限</strong>：請管理者將專案的 Google Sheet 分享給你的 Google 帳號（編輯權限）</li>
+        <li><strong>啟用 Apps Script API</strong>：打開 <a href="https://script.google.com/home/usersettings" target="_blank">script.google.com/home/usersettings</a>，將 <strong>Google Apps Script API</strong> 開關打開</li>
+        <li><strong>驗證連通</strong>：跟 Claude 說</li>
+      </ol>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>請幫我確認 clasp 是否正確連通 Apps Script 專案：
+1. 進入 apps_script/ 目錄，執行 clasp status，確認能列出 tracked files
+2. 執行 clasp pull 把遠端程式碼拉到暫存目錄，逐檔比對本地 apps_script/ 內容是否一致
+3. 告訴我：登入的帳號、連通狀態、以及本地與遠端是否同步</div>
+    `,
+    images: ["Assets/onboarding/2.3-1.jpg", "Assets/onboarding/2.3-2.jpg", "Assets/onboarding/2.3-3.jpg"]
+  },
+  {
+    title: "2.4 Google Sheets MCP 設定",
+    description: `
+      <p>這跟 clasp 無關，是讓 Claude 能直接查看和修改 Google Sheets 資料的工具。</p>
+      <ol>
+        <li>請管理員提供 <strong>Service Account 金鑰檔</strong>（一個 <code>.json</code> 檔案）</li>
+        <li>把金鑰檔放到專案根目錄（<code>STR-Alpha/</code> 下面）</li>
+        <li>跟 Claude 說：</li>
+      </ol>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>https://github.com/xing5/mcp-google-sheets 這個 MCP 已經透過 uvx 安裝。
+現在請幫我設定 mcp-google-sheets：
+1. 確認專案根目錄有 Service Account 金鑰檔 str-alpha-a3ccd99d43db.json
+   （如果沒有，提醒我跟管理員索取）
+2. 在專案根目錄建立 .mcp.json，內容如下：
+   {
+     "mcpServers": {
+       "google-sheets": {
+         "command": "uvx",
+         "args": ["mcp-google-sheets"],
+         "env": {
+           "GOOGLE_APPLICATION_CREDENTIALS": "./str-alpha-a3ccd99d43db.json"
+         }
+       }
+     }
+   }
+3. 建立完成後，告訴我需要重啟 Claude Code 才會生效</div>
+      <ol start="4">
+        <li><strong>重啟 Claude Desktop</strong>：<code>Ctrl + Alt + Del</code> → 工作管理員 → 結束 Claude Desktop，再重新開啟</li>
+        <li>重啟後，跟 Claude 說以下指令驗證 MCP 連線：</li>
+      </ol>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>請讀取 CLAUDE.md 取得主試算表 ID，
+然後用 mcp-google-sheets 讀取「帳戶狀態表」前 3 列，
+確認 MCP 連線正常</div>
+    `,
+    images: ["Assets/onboarding/2.4-1.jpg", "Assets/onboarding/2.4-2.jpg"]
+  },
+  {
+    title: "✅ 環境檢查清單",
+    description: `
+      <p>全部設定完成後，把以下 Prompt 貼給 Claude，讓它幫你<strong>一次確認所有環境</strong>：</p>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>請幫我檢查開發環境是否全部設定完成，逐項執行並回報結果（✅ 或 ❌）：
+
+1. git --version
+2. node --version
+3. npm --version
+4. clasp --version
+5. uvx --version
+6. git config user.name 和 git config user.email 是否有值
+7. 確認專案目錄下有 STR-Alpha 資料夾，且裡面有 apps_script/、dashboard/ 等子目錄
+8. 進入 STR-Alpha/apps_script/，執行 clasp status，確認能列出 tracked files
+9. 讀取 CLAUDE.md 取得主試算表 ID，用 mcp-google-sheets 讀取「帳戶狀態表」前 3 列
+
+全部完成後，列出總結表格，讓我知道哪些通過、哪些需要修正。</div>
+      <div class="note">🎉 如果全部通過，恭喜你！環境建置完成，可以開始開發了。</div>
+    `,
+    images: ["Assets/onboarding/checklist-1.jpg"]
+  }
+];
+
+let currentStep = parseInt(localStorage.getItem("onboarding-step")) || 0;
+let currentImage = 0;
+
+function render() {
+  const step = steps[currentStep];
+
+  // Badge
+  document.getElementById("stepBadge").textContent = `Step ${currentStep + 1} / ${steps.length}`;
+
+  // Text
+  const textPanel = document.getElementById("textPanel");
+  textPanel.innerHTML = `<div class="step-title">${step.title}</div><div class="step-desc">${step.description}</div>`;
+  textPanel.scrollTop = 0;
+
+  // Auto scroll hint: slowly scroll to bottom after 10s if content overflows
+  clearTimeout(window._autoScrollTimer);
+  window._autoScrollTimer = setTimeout(() => {
+    if (textPanel.scrollHeight > textPanel.clientHeight) {
+      textPanel.scrollTo({ top: textPanel.scrollHeight, behavior: "smooth" });
+    }
+  }, 10000);
+
+  // Images
+  currentImage = 0;
+  renderImage();
+
+  // Nav dots
+  const navDots = document.getElementById("navDots");
+  navDots.innerHTML = steps.map((_, i) =>
+    `<div class="dot ${i === currentStep ? 'active' : ''}" onclick="goToStep(${i})"></div>`
+  ).join("");
+
+  // Nav buttons
+  document.getElementById("prevBtn").disabled = currentStep === 0;
+  document.getElementById("nextBtn").disabled = currentStep === steps.length - 1;
+}
+
+function renderImage() {
+  const step = steps[currentStep];
+  const mainImg = document.getElementById("mainImg");
+  const imageMain = document.getElementById("imageMain");
+  const imgDots = document.getElementById("imgDots");
+  const imgPrev = document.getElementById("imgPrev");
+  const imgNext = document.getElementById("imgNext");
+
+  if (step.images.length === 0) {
+    imageMain.style.display = "flex";
+    mainImg.style.display = "none";
+    imageMain.innerHTML = '<div class="no-images">📷 此步驟無截圖</div>';
+    imgDots.innerHTML = "";
+    imgPrev.disabled = true;
+    imgNext.disabled = true;
+    return;
+  }
+
+  imageMain.innerHTML = `<img id="mainImg" src="${step.images[currentImage]}" alt="" onclick="zoomImage()">`;
+  imgDots.innerHTML = step.images.map((_, i) =>
+    `<div class="dot ${i === currentImage ? 'active' : ''}" onclick="goToImage(${i})"></div>`
+  ).join("");
+  imgPrev.disabled = currentImage === 0;
+  imgNext.disabled = currentImage === step.images.length - 1;
+}
+
+function changeStep(dir) {
+  const next = currentStep + dir;
+  if (next >= 0 && next < steps.length) {
+    currentStep = next;
+    localStorage.setItem("onboarding-step", currentStep);
+    render();
+  }
+}
+
+function goToStep(i) {
+  currentStep = i;
+  localStorage.setItem("onboarding-step", currentStep);
+  render();
+}
+
+function changeImage(dir) {
+  const step = steps[currentStep];
+  const next = currentImage + dir;
+  if (next >= 0 && next < step.images.length) {
+    currentImage = next;
+    renderImage();
+  }
+}
+
+function goToImage(i) {
+  currentImage = i;
+  renderImage();
+}
+
+function zoomImage() {
+  const step = steps[currentStep];
+  if (step.images.length === 0) return;
+  const overlay = document.getElementById("zoomOverlay");
+  document.getElementById("zoomImg").src = step.images[currentImage];
+  overlay.classList.add("show");
+}
+
+function closeZoom() {
+  document.getElementById("zoomOverlay").classList.remove("show");
+}
+
+function copyPrompt(btn) {
+  const block = btn.parentElement;
+  const text = block.textContent.replace("複製", "").trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = "✓ 已複製";
+    setTimeout(() => btn.textContent = "複製", 1500);
+  });
+}
+
+// Keyboard navigation
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") changeStep(1);
+  if (e.key === "ArrowLeft") changeStep(-1);
+  if (e.key === "Escape") closeZoom();
+});
+
+render();
+</script>
+
+</body>
+</html>
+
+<!-- sync trigger -->
