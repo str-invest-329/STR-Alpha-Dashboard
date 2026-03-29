@@ -527,9 +527,120 @@ EMAIL: 你的 GitHub 註冊信箱</div>
 9. 讀取 CLAUDE.md 取得主試算表 ID，用 mcp-google-sheets 讀取「帳戶狀態表」前 3 列
 
 全部完成後，列出總結表格，讓我知道哪些通過、哪些需要修正。</div>
-      <div class="note">🎉 如果全部通過，恭喜你！環境建置完成，可以開始開發了。</div>
+      <div class="note">🎉 如果全部通過，恭喜你！環境建置完成，接下來進入開發教程。</div>
     `,
     images: ["Assets/onboarding/checklist-1.jpg"]
+  },
+  {
+    title: "🏗️ 系統架構總覽",
+    description: `
+      <p>在開始動手之前，先了解整個系統的全貌。</p>
+      <p>STR Alpha 由<strong>三層架構</strong>組成：</p>
+      <ol>
+        <li><strong>核心資料庫（Google Sheets）</strong>— 所有資料的唯一來源，會計手動填入事件</li>
+        <li><strong>計算引擎（Google Apps Script）</strong>— 讀取事件 → 計算指標 → 產出狀態表</li>
+        <li><strong>前端介面（Dashboard + Monday.com）</strong>— 視覺化呈現資料</li>
+      </ol>
+      <div class="note">📖 右邊第一張圖是「項目運作架構」，展示各平台之間的資料流向。第二張圖是「項目開發流程」，展示開發時三層各自的工具鏈和部署路徑。</div>
+      <p>接下來的三個練習，會讓你<strong>實際操作每一層</strong>，了解修改過程中的流程和工具互動。</p>
+      <p>每個練習都是把 Prompt 貼給 Claude，由 Claude 一步一步帶你走。</p>
+    `,
+    images: ["Assets/tutorials/project-architecture.jpg", "Assets/tutorials/project-dev-flow.jpg", "Assets/tutorials/git-workflow.jpg"]
+  },
+  {
+    title: "練習 1：核心資料庫",
+    description: `
+      <p><strong>目標：</strong>了解 Google Sheets 的表結構，學會用 MCP 讀寫資料。</p>
+      <p>把以下 Prompt 貼給 Claude，它會一步步帶你認識資料庫的每張表：</p>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>你是 STR Alpha 的開發教練。請帶我完成以下練習任務，一次只給我一個步驟，等我確認完成後再進行下一步。每一步都要告訴我：
+1. 要做什麼
+2. 為什麼要這樣做
+3. 做完之後怎麼驗證
+
+練習任務：認識 Google Sheets 資料結構，並新增一支測試用的 Ticker
+
+請先讀取 CLAUDE.md 和 onboarding/SOP.md，了解專案架構。然後引導我完成以下流程：
+
+1. 用 mcp-google-sheets 讀取「股票設定表」，讓我看到目前有哪些 Ticker 和欄位結構
+2. 讀取「帳戶設定表」，讓我了解帳戶與幣別的對應
+3. 讀取「事件類型設定表」，讓我了解事件類型怎麼對應到計算分類
+4. 讀取「帳戶狀態表」前 5 列，讓我看到輸出表長什麼樣
+5. 在「股票設定表」新增一支測試 Ticker（用 TEST.US），確認欄位都填正確
+6. 確認新增成功後，刪除這支測試 Ticker，恢復原狀
+
+每一步都要解釋這張表在整個系統中扮演什麼角色。</div>
+      <div class="note">💡 這個練習結束後，你會知道：哪些表是輸入、哪些是輸出、設定表控制什麼。</div>
+    `,
+    images: ["Assets/tutorials/project-architecture.jpg"]
+  },
+  {
+    title: "練習 2：計算引擎",
+    description: `
+      <p><strong>目標：</strong>了解 calc_engine 的計算流程，學會修改計算邏輯並用 clasp push 部署。</p>
+      <p>把以下 Prompt 貼給 Claude：</p>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>你是 STR Alpha 的開發教練。請帶我完成以下練習任務，一次只給我一個步驟，等我確認完成後再進行下一步。每一步都要告訴我：
+1. 要做什麼
+2. 為什麼要這樣做
+3. 做完之後怎麼驗證
+
+練習任務：追蹤一個指標的計算過程，並做一次小修改
+
+請先讀取 CLAUDE.md 和 onboarding/SOP.md，了解專案架構。然後引導我完成以下流程：
+
+1. 讀取 apps_script/calc_engine.js，帶我走一遍 recalcAll() 的執行流程，用簡單的話解釋每個步驟在做什麼
+2. 以「可用現金」這個指標為例，帶我從原始事件表追蹤到最終寫入帳戶狀態表的完整路徑
+3. 用 mcp-google-sheets 讀取某個帳戶在「帳戶狀態表」的可用現金數字，再用事件表的原始資料手動驗算，確認計算引擎的結果正確
+4. 做一個無害的小修改：在 calc_engine.js 的 recalcAll() 函式開頭，加一行 Logger.log('recalcAll started by [我的名字]')
+5. 執行 clasp push，確認推送成功
+6. 到 Google Sheets 執行「Monday 工具 → 重算狀態表」，確認程式能正常執行
+7. 確認沒問題後，移除剛才加的 Logger.log，再 clasp push 一次恢復原狀
+8. 用 git 存版本（如果有任何值得保留的改動）
+
+過程中請解釋：clasp push 做了什麼、為什麼要到 Google Sheets 上測試、本地檔案和 Apps Script 的關係。</div>
+      <div class="note">💡 這個練習結束後，你會知道：指標怎麼算出來的、clasp push 的部署流程、怎麼測試計算結果。</div>
+    `,
+    images: ["Assets/tutorials/project-dev-flow.jpg", "Assets/tutorials/git-workflow.jpg"]
+  },
+  {
+    title: "練習 3：前端儀表板",
+    description: `
+      <p><strong>目標：</strong>了解 Dashboard 怎麼從 API 取資料並顯示，學會修改前端並觸發部署。</p>
+      <p>把以下 Prompt 貼給 Claude：</p>
+      <div class="prompt-block"><button class="copy-btn" onclick="copyPrompt(this)">複製</button>你是 STR Alpha 的開發教練。請帶我完成以下練習任務，一次只給我一個步驟，等我確認完成後再進行下一步。每一步都要告訴我：
+1. 要做什麼
+2. 為什麼要這樣做
+3. 做完之後怎麼驗證
+
+練習任務：了解 Dashboard 的資料流，並做一次前端修改
+
+請先讀取 CLAUDE.md 和 onboarding/SOP.md，了解專案架構。然後引導我完成以下流程：
+
+1. 讀取 dashboard/index.html，解釋整體結構：資料怎麼從 API 進來、存在哪個變數、怎麼渲染到畫面上
+2. 讀取 apps_script/api.js，解釋 Dashboard 呼叫 ?action=all 時，API 回傳的 JSON 結構是什麼
+3. 帶我在本地瀏覽器打開 dashboard/index.html，確認能看到資料（如果 API 連不上，解釋 demo 資料的機制）
+4. 做一個無害的小修改：在 Dashboard 頁面的標題或 footer 加上「測試 by [我的名字]」
+5. 本地瀏覽器刷新確認修改生效
+6. 確認沒問題後，移除剛才的測試文字，恢復原狀
+7. 解釋完整的部署流程：git push → GitHub Actions → STR-Alpha-Dashboard repo → GitHub Pages
+
+過程中請解釋：Dashboard 和 Apps Script API 的關係、為什麼改 api.js 需要建新版本部署但改 Dashboard 只需要 git push。</div>
+      <div class="note">💡 這個練習結束後，你會知道：前端怎麼取資料、API 的運作方式、完整的部署流程。</div>
+    `,
+    images: ["Assets/tutorials/git-workflow.jpg"]
+  },
+  {
+    title: "🎓 教程完成",
+    description: `
+      <p>恭喜！三個練習都走完後，你已經實際接觸過三層架構的每一層：</p>
+      <ol>
+        <li><strong>Google Sheets</strong> — 資料怎麼存、表之間的關係</li>
+        <li><strong>Apps Script</strong> — 計算引擎怎麼跑、clasp 怎麼部署</li>
+        <li><strong>Dashboard</strong> — 前端怎麼取資料、怎麼部署上線</li>
+      </ol>
+      <p>接下來就可以開始接實際的開發任務了。有任何問題，隨時問 Claude。</p>
+      <div class="note">🚀 開發過程中，隨時可以讓 Claude 讀取 CLAUDE.md 和 SOP.md 來了解專案的規範和架構。</div>
+    `,
+    images: ["Assets/tutorials/project-architecture.jpg", "Assets/tutorials/project-dev-flow.jpg", "Assets/tutorials/git-workflow.jpg"]
   }
 ];
 
