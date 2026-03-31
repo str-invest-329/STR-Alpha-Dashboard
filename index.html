@@ -278,6 +278,96 @@
       font-size: 0.72rem;
       color: var(--gray);
     }
+
+    /* === Mobile Responsive (iPhone 17 ~402px) === */
+    @media (max-width: 480px) {
+      body { font-size: 13px; }
+
+      /* Topbar */
+      .topbar { padding: 10px 16px; }
+      .topbar h1 { font-size: 1rem; }
+      .topbar .meta { font-size: 0.72rem; }
+
+      /* Container */
+      .container { padding: 10px; }
+
+      /* Filter Bar */
+      .filter-bar {
+        padding: 10px 14px;
+        gap: 10px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .filter-group { flex-direction: row; align-items: center; gap: 8px; }
+      .filter-group label { min-width: 36px; font-size: 0.72rem; }
+      .filter-bar select { flex: 1; font-size: 0.8rem; padding: 8px 10px; }
+      .filter-actions {
+        margin-left: 0;
+        justify-content: stretch;
+      }
+      .filter-actions button {
+        flex: 1;
+        padding: 10px 12px;
+        font-size: 0.82rem;
+      }
+
+      /* KPI Cards */
+      .kpi-grid { gap: 8px; margin-bottom: 12px; }
+      .kpi-card { padding: 14px 16px; }
+      .kpi-card .value { font-size: 1.35rem; }
+      .kpi-card .label { font-size: 0.74rem; }
+      .kpi-card .sub { font-size: 0.76rem; }
+
+      /* Charts */
+      .charts-grid { gap: 8px; margin-bottom: 12px; }
+      .chart-card { padding: 14px 16px; }
+      .chart-card h3 { font-size: 0.82rem; margin-bottom: 8px; }
+      .chart-card canvas { max-height: 250px; }
+
+      /* Tabs */
+      .tabs {
+        padding: 0 10px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .tabs::-webkit-scrollbar { display: none; }
+      .tab {
+        padding: 10px 12px;
+        font-size: 0.78rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* Tables */
+      .tab-content { padding: 10px 12px; }
+      table { font-size: 0.76rem; }
+      th { padding: 6px 8px; font-size: 0.72rem; }
+      td { padding: 6px 8px; }
+
+      /* Event Filter */
+      .event-filter-bar {
+        flex-wrap: wrap;
+        padding: 8px 12px;
+        gap: 6px;
+        font-size: 0.78rem;
+      }
+      .event-filter-bar select { font-size: 0.78rem; padding: 4px 6px; }
+      .event-count { font-size: 0.72rem; }
+      .event-pager button { font-size: 0.72rem; padding: 2px 6px; }
+
+      /* Table Card Spacing */
+      .table-card + .table-card,
+      .table-card[style*="margin-top"] { margin-top: 12px !important; }
+
+      /* Position Bar */
+      .position-bar-equity, .position-bar-cash { font-size: 0.65rem; }
+      .position-bar-labels { font-size: 0.68rem; }
+
+      /* Tooltip - disabled on touch */
+      [data-tooltip]:hover::after,
+      [data-tooltip]:hover::before { display: none; }
+    }
   </style>
 </head>
 <body>
