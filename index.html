@@ -400,6 +400,23 @@
       [data-tooltip]:hover::after,
       [data-tooltip]:hover::before { display: none; }
     }
+    /* === Perf Combined Card === */
+    .perf-combined-card {
+      background: var(--bg-card);
+      padding: 16px 22px 14px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      border-left: 3px solid var(--primary);
+      display: inline-block;
+    }
+    .perf-combined-card .perf-title { font-size: 0.82rem; font-weight: 700; color: var(--dark-gray); margin-bottom: 10px; }
+    .perf-combined-body { display: flex; align-items: center; }
+    .perf-col { padding: 0 24px; text-align: center; }
+    .perf-col:first-child { padding-left: 0; }
+    .perf-col-divider { width: 1px; height: 44px; background: var(--border); flex-shrink: 0; }
+    .perf-col .perf-col-label { font-size: 0.76rem; color: var(--dark-gray); font-weight: 600; margin-bottom: 4px; }
+    .perf-col .perf-col-value { font-size: 1.4rem; font-weight: 700; }
+    .perf-combined-date { font-size: 0.76rem; color: var(--gray); margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -432,11 +449,7 @@
       </select>
     </div>
     <div class="filter-group">
-      <label>起日</label>
-      <input type="date" id="dateFrom" value="2026-01-01" onchange="onDateFilterChange()">
-    </div>
-    <div class="filter-group">
-      <label>訖日</label>
+      <label>績效訖日</label>
       <input type="date" id="dateTo" onchange="onDateFilterChange()">
     </div>
     <div class="filter-actions">
@@ -452,6 +465,9 @@
   </div>
   <div class="kpi-grid" id="kpiGrid">
     <div class="loading">載入中...</div>
+  </div>
+  <div id="perfKpiGrid" style="margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;">
+    <div class="loading">績效資料載入中...</div>
   </div>
 
   <!-- 模塊 2：圖表區（根據 Card 點擊切換）-->
@@ -513,9 +529,14 @@
 // ===== 設定 =====
 // 部署 Apps Script Web App 後，把 URL 貼到這裡
 var API_URL = "https://script.google.com/macros/s/AKfycbwLDChCXSOPCWAlBVKWbYCOoV0MFhW3e6EVI9g0-Lspq7OSq11xwuREGTMB_90I34k/exec";
+var PERF_API_URL = "https://script.google.com/macros/s/AKfycby0kJjdjxa3o10y9WSWyzqF0sJvQEePbBwVgOb_M4t9YZjMlIkCEpyT8LVa5OrVUOUg/exec";
 
 // ===== 全域資料 =====
 var DATA = null;
+var PERF_DATA_US1 = null;
+var PERF_DATA_US2 = null;
+var PERF_DATA_TW1 = null;
+var PERF_DATA_TW2 = null;
 var currentTab = "market";
 
 // ===== 顏色 =====
@@ -523,7 +544,7 @@ var COLORS = ["#2B2D42", "#8D99AE", "#EF233C", "#D90429", "#3d4060", "#a8b2c0", 
 var KPI_BORDERS = ["#2B2D42", "#2B2D42", "#8D99AE", "#2B8A5E", "#EF233C", "#D90429"];
 
 // ===== 日期篩選 =====
-var DATE_FROM = "2026-01-01";   // 預設起日
+var DATE_FROM = "";
 var DATE_TO = "";
 var cachedAllTradeEvents = null;
 var cachedAllDepositEvents = null;
@@ -555,6 +576,8 @@ async function loadData() {
   } catch (err) {
     document.getElementById("kpiGrid").innerHTML = '<div class="error">載入失敗: ' + err.message + '</div>';
   }
+  await Promise.all([loadPerfDataUS1(), loadPerfDataUS2(), loadPerfDataTW1(), loadPerfDataTW2()]);
+  renderPerfKPI();
 }
 
 // ===== 載入所有事件資料（供日期篩選使用）=====
@@ -583,16 +606,108 @@ async function loadAllEventsForDateFilter() {
 
 // ===== 日期篩選變更 =====
 async function onDateFilterChange() {
-  DATE_FROM = document.getElementById("dateFrom").value;
-  DATE_TO   = document.getElementById("dateTo").value;
-
-  if (DATE_FROM && !cachedAllTradeEvents) {
-    // 尚未載入事件資料，先顯示載入中
-    document.getElementById("kpiGrid").innerHTML = '<div class="loading">⏳ 載入期間事件資料中...</div>';
-    await loadAllEventsForDateFilter();
-  }
+  DATE_TO = document.getElementById("dateTo").value;
 
   render();
+  renderPerfKPI();
+}
+
+// ===== 載入績效資料 =====
+function parsePerfRows(rows) {
+  var result = [];
+  rows.forEach(function(row) {
+    var keys = Object.keys(row);
+    var dv = row[keys[0]];
+    var dateStr = '';
+    if (dv) {
+      var d = new Date(dv);
+      if (!isNaN(d)) {
+        dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      }
+    }
+    if (!dateStr) return;
+    var b = row[keys[1]], c = row[keys[2]], d2 = row[keys[3]];
+    result.push({
+      date: dateStr,
+      perfRate: (b != null && b !== '') ? Number(b) : null,
+      soxRate:  (c != null && c !== '') ? Number(c) : null,
+      gap:      (d2 != null && d2 !== '') ? Number(d2) : null
+    });
+  });
+  return result;
+}
+
+async function loadPerfDataUS1() {
+  try {
+    var res = await fetch(PERF_API_URL + '?action=company_perf_us_1');
+    var json = await res.json();
+    PERF_DATA_US1 = parsePerfRows(json.perf_events || []);
+  } catch(e) { console.error('loadPerfDataUS1:', e); PERF_DATA_US1 = []; }
+}
+async function loadPerfDataUS2() {
+  try {
+    var res = await fetch(PERF_API_URL + '?action=company_perf_us_2');
+    var json = await res.json();
+    PERF_DATA_US2 = parsePerfRows(json.perf_events2 || []);
+  } catch(e) { console.error('loadPerfDataUS2:', e); PERF_DATA_US2 = []; }
+}
+async function loadPerfDataTW1() {
+  try {
+    var res = await fetch(PERF_API_URL + '?action=company_perf_tw_1');
+    var json = await res.json();
+    PERF_DATA_TW1 = parsePerfRows(json.perf_events || []);
+  } catch(e) { console.error('loadPerfDataTW1:', e); PERF_DATA_TW1 = []; }
+}
+async function loadPerfDataTW2() {
+  try {
+    var res = await fetch(PERF_API_URL + '?action=company_perf_tw_2');
+    var json = await res.json();
+    PERF_DATA_TW2 = parsePerfRows(json.perf_events2 || []);
+  } catch(e) { console.error('loadPerfDataTW2:', e); PERF_DATA_TW2 = []; }
+}
+
+function renderPerfKPI() {
+  var perfGrid = document.getElementById('perfKpiGrid');
+  if (!perfGrid) return;
+  var dateTo = document.getElementById('dateTo').value;
+
+  function perfFmt(v) { return v == null ? '---' : (v * 100).toFixed(2) + '%'; }
+
+  function col(label, v) {
+    var cls = v != null ? valCls(v) : 'neutral';
+    return '<div class="perf-col"><div class="perf-col-label">' + label + '</div>' +
+      '<div class="perf-col-value ' + cls + '">' + perfFmt(v) + '</div></div>';
+  }
+
+  function buildCard(title, data) {
+    if (!data || data.length === 0) {
+      return '<div class="perf-combined-card"><div class="perf-title">' + title + '</div>' +
+        '<div style="color:var(--gray);font-size:0.85rem">無法載入績效資料</div></div>';
+    }
+    var filtered = data.filter(function(r) {
+      return r.perfRate != null && (!dateTo || r.date <= dateTo);
+    });
+    var row = filtered.length > 0 ? filtered[filtered.length - 1] : null;
+    var dateLabel = row ? row.date.replace(/-/g, '/') : '--';
+    return '<div class="perf-combined-card">' +
+      '<div class="perf-title">' + title + '</div>' +
+      '<div class="perf-combined-body">' +
+        col('公司獲利率', row ? row.perfRate : null) +
+        '<div class="perf-col-divider"></div>' +
+        col('SOX漲幅', row ? row.soxRate : null) +
+        '<div class="perf-col-divider"></div>' +
+        col('獲利差', row ? row.gap : null) +
+      '</div>' +
+      '<div class="perf-combined-date">截至 ' + dateLabel + '</div>' +
+    '</div>';
+  }
+
+  var market = document.getElementById('marketFilter') ? document.getElementById('marketFilter').value : '美股';
+  var d1 = (market === '台股') ? PERF_DATA_TW1 : PERF_DATA_US1;
+  var d2 = (market === '台股') ? PERF_DATA_TW2 : PERF_DATA_US2;
+  perfGrid.innerHTML =
+    buildCard('總體績效(2026/01/01起)', d1) +
+    buildCard('總體績效(2026/05/01起)', d2);
 }
 
 // ===== FIFO 法計算期間股票已實現損益 =====
@@ -956,6 +1071,7 @@ function onMarketChange() {
   populateAccountFilter();
   populateTickerFilter();
   render();
+  renderPerfKPI();
 }
 
 function populateAccountFilter() {
@@ -1020,11 +1136,14 @@ function resetFilters() {
   document.getElementById("tickerFilter").value = "ALL";
   var pgb = document.getElementById("pieGroupBy");
   if (pgb) pgb.value = "stock";
-  // 清除日期篩選
-  document.getElementById("dateFrom").value = "";
-  document.getElementById("dateTo").value = "";
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  var yy = yesterday.getFullYear(), mm = String(yesterday.getMonth()+1).padStart(2,'0'), dd = String(yesterday.getDate()).padStart(2,'0');
+  var yval = yy + '-' + mm + '-' + dd;
+  document.getElementById("dateTo").value = yval;
   DATE_FROM = "";
-  DATE_TO = "";
+  DATE_TO = yval;
+  renderPerfKPI();
   onMarketChange();
 }
 
@@ -2132,6 +2251,14 @@ function getDemoData() {
 }
 
 // ===== 啟動 =====
+(function() {
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  var yy = yesterday.getFullYear(), mm = String(yesterday.getMonth()+1).padStart(2,'0'), dd = String(yesterday.getDate()).padStart(2,'0');
+  var yval = yy + '-' + mm + '-' + dd;
+  document.getElementById('dateTo').value = yval;
+  DATE_TO = yval;
+})();
 loadData();
 </script>
 
