@@ -679,7 +679,7 @@ function renderPerfKPI() {
       '<div class="perf-col-value ' + cls + '">' + perfFmt(v) + '</div></div>';
   }
 
-  function buildCard(title, data) {
+  function buildCard(title, data, benchmarkLabel) {
     if (!data || data.length === 0) {
       return '<div class="perf-combined-card"><div class="perf-title">' + title + '</div>' +
         '<div style="color:var(--gray);font-size:0.85rem">無法載入績效資料</div></div>';
@@ -694,7 +694,7 @@ function renderPerfKPI() {
       '<div class="perf-combined-body">' +
         col('公司獲利率', row ? row.perfRate : null) +
         '<div class="perf-col-divider"></div>' +
-        col('SOX漲幅', row ? row.soxRate : null) +
+        col(benchmarkLabel, row ? row.soxRate : null) +
         '<div class="perf-col-divider"></div>' +
         col('獲利差', row ? row.gap : null) +
       '</div>' +
@@ -705,9 +705,10 @@ function renderPerfKPI() {
   var market = document.getElementById('marketFilter') ? document.getElementById('marketFilter').value : '美股';
   var d1 = (market === '台股') ? PERF_DATA_TW1 : PERF_DATA_US1;
   var d2 = (market === '台股') ? PERF_DATA_TW2 : PERF_DATA_US2;
+  var benchmarkLabel = (market === '台股') ? '00981A漲幅' : 'SOX漲幅';
   perfGrid.innerHTML =
-    buildCard('總體績效(2026/01/01起)', d1) +
-    buildCard('總體績效(2026/05/01起)', d2);
+    buildCard('總體績效(2026/01/01起)', d1, benchmarkLabel) +
+    buildCard('總體績效(2026/05/01起)', d2, benchmarkLabel);
 }
 
 // ===== FIFO 法計算期間股票已實現損益 =====
