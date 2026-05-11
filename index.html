@@ -466,7 +466,7 @@
   <div class="kpi-grid" id="kpiGrid">
     <div class="loading">載入中...</div>
   </div>
-  <div id="perfKpiGrid" style="margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;">
+  <div id="perfKpiGrid" style="margin-bottom:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
     <div class="loading">績效資料載入中...</div>
   </div>
 
@@ -702,13 +702,36 @@ function renderPerfKPI() {
     '</div>';
   }
 
+  function buildPositionCard(market) {
+    var row = (DATA && DATA.market_status || []).find(function(r) { return r["市場"] === market; });
+    if (!row) return '';
+    var eq = num(row["股票倉位"]);
+    var cash = num(row["現金倉位"]);
+    var eqPct = (eq * 100).toFixed(1);
+    var cashPct = (cash * 100).toFixed(1);
+    return '<div class="perf-combined-card" style="border-left-color:#8D99AE;">' +
+      '<div class="perf-title">倉位配置</div>' +
+      '<div class="position-bar" style="margin-top:2px">' +
+        '<div class="position-bar-track">' +
+          '<div class="position-bar-equity" style="width:' + eqPct + '%">' + (eqPct > 8 ? eqPct + '%' : '') + '</div>' +
+          '<div class="position-bar-cash">' + (cashPct > 8 ? cashPct + '%' : '') + '</div>' +
+        '</div>' +
+        '<div class="position-bar-labels">' +
+          '<span data-tooltip="持倉成本 / (持倉成本+可用現金+定存)">股票 ' + eqPct + '%</span>' +
+          '<span data-tooltip="(可用現金+定存) / (持倉成本+可用現金+定存)">現金 ' + cashPct + '%</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
   var market = document.getElementById('marketFilter') ? document.getElementById('marketFilter').value : '美股';
   var d1 = (market === '台股') ? PERF_DATA_TW1 : PERF_DATA_US1;
   var d2 = (market === '台股') ? PERF_DATA_TW2 : PERF_DATA_US2;
   var benchmarkLabel = (market === '台股') ? '00981A漲幅' : 'SOX漲幅';
   perfGrid.innerHTML =
     buildCard('總體績效(2026/01/01起)', d1, benchmarkLabel) +
-    buildCard('總體績效(2026/05/01起)', d2, benchmarkLabel);
+    buildCard('總體績效(2026/05/01起)', d2, benchmarkLabel) +
+    buildPositionCard(market);
 }
 
 // ===== FIFO 法計算期間股票已實現損益 =====
@@ -1221,7 +1244,9 @@ function renderKPI() {
       '</div>';
   }).join("");
 
-  document.getElementById("kpiGrid").innerHTML = html;
+  var kpiGrid = document.getElementById("kpiGrid");
+  kpiGrid.style.gridTemplateColumns = (cards.length > 0 && cards.length <= 4) ? 'repeat(' + cards.length + ', 1fr)' : '';
+  kpiGrid.innerHTML = html;
 }
 
 function buildMarketKPI(f) {
@@ -1261,7 +1286,7 @@ function buildMarketKPI(f) {
     capitalTip = "總資本 = 期前資產 + 期間注資（期前損益已還原）；投入資金 = 當前持倉買入成本";
   }
 
-  return [
+  var cards = [
     { label: "總資本", value: fmtCurrency(capital), sub: capitalSub, border: KPI_BORDERS[0], chartView: "allocation", tooltip: capitalTip },
     { label: "總資產", value: fmtCurrency(totalAssets), sub: "NAV " + fmtCurrency(nav), border: KPI_BORDERS[1], chartView: "allocation", tooltip: "總資產 = 持倉市值 + 可用現金 + 定存", subTooltip: "NAV = 總資產 - 總負債" },
     { label: "倉位配置", bar: { equity: eqWeight, cash: cashWeight }, border: KPI_BORDERS[2], chartView: "allocation", tooltip: "股票倉位 + 現金倉位 = 100%" },
@@ -1271,6 +1296,10 @@ function buildMarketKPI(f) {
     { label: "總損益", value: fmtCurrency(totalPnL), sub: "總損益率 " + fmtPercent(totalReturn), border: KPI_BORDERS[3], cls: valCls(totalPnL), chartView: "pnl_breakdown", tooltip: "總損益 = 已實現總損益 + 未實現總損益", subTooltip: "總損益率 = 總損益 / 總資本" },
     { label: "可用現金", value: fmtCurrency(availCash), sub: "定存 " + fmtCurrency(deposit), border: KPI_BORDERS[1], chartView: "allocation", tooltip: "可用現金 = 帳戶可動用現金（不含定存）", subTooltip: "定存 = 目前定存金額" }
   ];
+  if (f.market === "美股" || f.market === "台股") {
+    return [cards[0], cards[1], cards[7]];
+  }
+  return cards;
 }
 
 function buildAccountKPI(f) {
@@ -1311,7 +1340,7 @@ function buildAccountKPI(f) {
     capitalTip = "總資本 = 期前資產 + 期間注資（期前損益已還原）；投入資金 = 當前持倉買入成本";
   }
 
-  return [
+  var cards = [
     { label: "總資本", value: fmtCurrency(capital), sub: capitalSub, border: KPI_BORDERS[0], chartView: "allocation", tooltip: capitalTip },
     { label: "總資產", value: fmtCurrency(totalAssets), sub: "NAV " + fmtCurrency(nav), border: KPI_BORDERS[1], chartView: "allocation", tooltip: "總資產 = 持倉市值 + 可用現金 + 定存", subTooltip: "NAV = 總資產 - 總負債" },
     { label: "倉位配置", bar: { equity: eqWeight, cash: cashWeight }, border: KPI_BORDERS[2], chartView: "allocation", tooltip: "股票倉位 + 現金倉位 = 100%" },
@@ -1321,6 +1350,10 @@ function buildAccountKPI(f) {
     { label: "總損益", value: fmtCurrency(totalPnL), sub: "總損益率 " + fmtPercent(totalReturn), border: KPI_BORDERS[3], cls: valCls(totalPnL), chartView: "pnl_breakdown", tooltip: "總損益 = 已實現總損益 + 未實現總損益", subTooltip: "總損益率 = 總損益 / 總資本" },
     { label: "可用現金", value: fmtCurrency(availCash), sub: "定存 " + fmtCurrency(deposit), border: KPI_BORDERS[1], chartView: "allocation", tooltip: "可用現金 = 帳戶可動用現金（不含定存）", subTooltip: "定存 = 目前定存金額" }
   ];
+  if (f.market === "美股" || f.market === "台股") {
+    return [cards[0], cards[1], cards[7]];
+  }
+  return cards;
 }
 
 function buildTickerKPI(f) {
