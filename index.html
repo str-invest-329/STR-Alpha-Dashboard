@@ -637,32 +637,56 @@ function parsePerfRows(rows) {
   return result;
 }
 
+// 名稱版:用欄位標題抓,插欄/改欄序都不會壞
+function parsePerfRowsByHeader(rows) {
+  var result = [];
+  rows.forEach(function(row) {
+    var dv = row["日期"];
+    var dateStr = '';
+    if (dv) {
+      var d = new Date(dv);
+      if (!isNaN(d)) {
+        dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      }
+    }
+    if (!dateStr) return;
+    var b = row["公司總體獲利率"], c = row["SOX指數漲跌幅"], d2 = row["獲利差距"];
+    result.push({
+      date: dateStr,
+      perfRate: (b != null && b !== '') ? Number(b) : null,
+      soxRate:  (c != null && c !== '') ? Number(c) : null,
+      gap:      (d2 != null && d2 !== '') ? Number(d2) : null
+    });
+  });
+  return result;
+}
+
 async function loadPerfDataUS1() {
   try {
     var res = await fetch(PERF_API_URL + '?action=company_perf_us_1');
     var json = await res.json();
-    PERF_DATA_US1 = parsePerfRows(json.perf_events || []);
+    PERF_DATA_US1 = parsePerfRowsByHeader(json.perf_events || []);
   } catch(e) { console.error('loadPerfDataUS1:', e); PERF_DATA_US1 = []; }
 }
 async function loadPerfDataUS2() {
   try {
     var res = await fetch(PERF_API_URL + '?action=company_perf_us_2');
     var json = await res.json();
-    PERF_DATA_US2 = parsePerfRows(json.perf_events2 || []);
+    PERF_DATA_US2 = parsePerfRowsByHeader(json.perf_events2 || []);
   } catch(e) { console.error('loadPerfDataUS2:', e); PERF_DATA_US2 = []; }
 }
 async function loadPerfDataTW1() {
   try {
     var res = await fetch(PERF_API_URL + '?action=company_perf_tw_1');
     var json = await res.json();
-    PERF_DATA_TW1 = parsePerfRows(json.perf_events || []);
+    PERF_DATA_TW1 = parsePerfRowsByHeader(json.perf_events || []);
   } catch(e) { console.error('loadPerfDataTW1:', e); PERF_DATA_TW1 = []; }
 }
 async function loadPerfDataTW2() {
   try {
     var res = await fetch(PERF_API_URL + '?action=company_perf_tw_2');
     var json = await res.json();
-    PERF_DATA_TW2 = parsePerfRows(json.perf_events2 || []);
+    PERF_DATA_TW2 = parsePerfRowsByHeader(json.perf_events2 || []);
   } catch(e) { console.error('loadPerfDataTW2:', e); PERF_DATA_TW2 = []; }
 }
 
