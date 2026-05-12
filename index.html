@@ -428,7 +428,7 @@
     }
     .perf-total-label { font-size: 0.92rem; color: var(--text); font-weight: 700; }
     .perf-total-value { font-size: 1.02rem; font-weight: 700; }
-    .perf-combined-date { font-size: 0.76rem; color: var(--gray); margin-top: 6px; }
+    .perf-combined-date { font-size: 0.76rem; color: var(--gray); margin-left: auto; }
   </style>
 </head>
 <body>
@@ -741,8 +741,8 @@ function renderPerfKPI() {
       '<div class="perf-total-row">' +
         '<span class="perf-total-label">總獲利</span>' +
         '<span class="perf-total-value ' + profitCls + '">' + profitStr + '</span>' +
+        '<span class="perf-combined-date">截至 ' + dateLabel + '</span>' +
       '</div>' +
-      '<div class="perf-combined-date">截至 ' + dateLabel + '</div>' +
     '</div>';
   }
 
@@ -755,7 +755,7 @@ function renderPerfKPI() {
     var cashPct = (cash * 100).toFixed(1);
     return '<div class="perf-combined-card" style="border-left-color:#8D99AE;">' +
       '<div class="perf-title">倉位配置</div>' +
-      '<div class="position-bar" style="margin-top:2px">' +
+      '<div class="position-bar" style="flex:1;display:flex;flex-direction:column;justify-content:center;">' +
         '<div class="position-bar-track">' +
           '<div class="position-bar-equity" style="width:' + eqPct + '%">' + (eqPct > 8 ? eqPct + '%' : '') + '</div>' +
           '<div class="position-bar-cash">' + (cashPct > 8 ? cashPct + '%' : '') + '</div>' +
