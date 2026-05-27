@@ -754,8 +754,12 @@ function renderPerfKPI() {
   function buildPositionCard(market) {
     var row = (DATA && DATA.market_status || []).find(function(r) { return r["市場"] === market; });
     if (!row) return '';
-    var eq = num(row["股票倉位"]);
-    var cash = num(row["現金倉位"]);
+    // 市值基準：股票市值 / (股票市值 + 可用現金 + 定存)
+    var mktVal = num(row["持倉市值"]);
+    var cashTotal = num(row["可用現金"]) + num(row["定存"]);
+    var denom = mktVal + cashTotal;
+    var eq = denom > 0 ? mktVal / denom : 0;
+    var cash = denom > 0 ? cashTotal / denom : 0;
     var eqPct = (eq * 100).toFixed(1);
     var cashPct = (cash * 100).toFixed(1);
     return '<div class="perf-combined-card" style="border-left-color:#8D99AE;">' +
@@ -766,8 +770,8 @@ function renderPerfKPI() {
           '<div class="position-bar-cash">' + (cashPct > 8 ? cashPct + '%' : '') + '</div>' +
         '</div>' +
         '<div class="position-bar-labels">' +
-          '<span data-tooltip="持倉成本 / (持倉成本+可用現金+定存)">股票 ' + eqPct + '%</span>' +
-          '<span data-tooltip="(可用現金+定存) / (持倉成本+可用現金+定存)">現金 ' + cashPct + '%</span>' +
+          '<span data-tooltip="持倉市值 / (持倉市值+可用現金+定存)">股票 ' + eqPct + '%</span>' +
+          '<span data-tooltip="(可用現金+定存) / (持倉市值+可用現金+定存)">現金 ' + cashPct + '%</span>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -1311,12 +1315,14 @@ function buildMarketKPI(f) {
   var unrealTotalRate = num(row["未實現總損益率"]);
   var realTotalPnL    = num(row["已實現總損益"]);
   var realTotalRate   = num(row["已實現總損益率"]);
-  var eqWeight        = num(row["股票倉位"]);
-  var cashWeight      = num(row["現金倉位"]);
   var availCash       = num(row["可用現金"]);
   var deposit         = num(row["定存"]);
   var realizedEquityPnL = num(row["已實現股票損益"]);
   var interest        = num(row["利息與股息"]);
+  // 倉位配置改為「市值基準」：股票市值 = 總資產 − 可用現金 − 定存
+  var cashTotal       = availCash + deposit;
+  var eqWeight        = totalAssets > 0 ? (totalAssets - cashTotal) / totalAssets : 0;
+  var cashWeight      = totalAssets > 0 ? cashTotal / totalAssets : 0;
 
   // 日期篩選：若有起訖日，重算期間相關指標
   var pm = computePeriodMetrics(f);
@@ -1338,7 +1344,7 @@ function buildMarketKPI(f) {
   var cards = [
     { label: "總資本", value: fmtCurrency(capital), sub: capitalSub, border: KPI_BORDERS[0], chartView: "allocation", tooltip: capitalTip },
     { label: "總資產", value: fmtCurrency(totalAssets), sub: "NAV " + fmtCurrency(nav), border: KPI_BORDERS[1], chartView: "allocation", tooltip: "總資產 = 持倉市值 + 可用現金 + 定存", subTooltip: "NAV = 總資產 - 總負債" },
-    { label: "倉位配置", bar: { equity: eqWeight, cash: cashWeight }, border: KPI_BORDERS[2], chartView: "allocation", tooltip: "股票倉位 + 現金倉位 = 100%" },
+    { label: "倉位配置", bar: { equity: eqWeight, cash: cashWeight }, border: KPI_BORDERS[2], chartView: "allocation", tooltip: "市值基準：股票倉位 = (總資產 − 可用現金 − 定存) / 總資產" },
     { spacer: true },
     { label: "已實現總損益", value: fmtCurrency(realTotalPnL), sub: (pm ? "期間" : "") + "已實現總損益率 " + fmtPercent(realTotalRate), border: KPI_BORDERS[5], cls: valCls(realTotalPnL), chartView: "realized_detail", subTooltip: "已實現總損益率 = 已實現總損益 / 總資本" },
     { label: "未實現總損益", value: fmtCurrency(unrealTotalPnL), sub: "未實現總損益率 " + fmtPercent(unrealTotalRate), border: KPI_BORDERS[4], cls: valCls(unrealTotalPnL), chartView: "unrealized", tooltip: "未實現總損益 = 持倉市值 - 持倉成本", subTooltip: pm ? "未實現總損益率 = 未實現總損益 / 期間總資本" : "未實現總損益率 = 未實現總損益 / 總資本" },
@@ -1366,12 +1372,14 @@ function buildAccountKPI(f) {
   var unrealTotalRate = num(acct["未實現總損益率"]);
   var realTotalPnL    = num(acct["已實現總損益"]);
   var realTotalRate   = num(acct["已實現總損益率"]);
-  var eqWeight        = num(acct["股票倉位"]);
-  var cashWeight      = num(acct["現金倉位"]);
   var availCash       = num(acct["可用現金"]);
   var deposit         = num(acct["定存"]);
   var realizedEquityPnL = num(acct["已實現股票損益"]);
   var interest        = num(acct["利息與股息"]);
+  // 倉位配置改為「市值基準」：股票市值 = 總資產 − 可用現金 − 定存
+  var cashTotal       = availCash + deposit;
+  var eqWeight        = totalAssets > 0 ? (totalAssets - cashTotal) / totalAssets : 0;
+  var cashWeight      = totalAssets > 0 ? cashTotal / totalAssets : 0;
 
   // 日期篩選：若有起訖日，重算期間相關指標
   var pm = computePeriodMetrics(f);
@@ -1392,7 +1400,7 @@ function buildAccountKPI(f) {
   var cards = [
     { label: "總資本", value: fmtCurrency(capital), sub: capitalSub, border: KPI_BORDERS[0], chartView: "allocation", tooltip: capitalTip },
     { label: "總資產", value: fmtCurrency(totalAssets), sub: "NAV " + fmtCurrency(nav), border: KPI_BORDERS[1], chartView: "allocation", tooltip: "總資產 = 持倉市值 + 可用現金 + 定存", subTooltip: "NAV = 總資產 - 總負債" },
-    { label: "倉位配置", bar: { equity: eqWeight, cash: cashWeight }, border: KPI_BORDERS[2], chartView: "allocation", tooltip: "股票倉位 + 現金倉位 = 100%" },
+    { label: "倉位配置", bar: { equity: eqWeight, cash: cashWeight }, border: KPI_BORDERS[2], chartView: "allocation", tooltip: "市值基準：股票倉位 = (總資產 − 可用現金 − 定存) / 總資產" },
     { spacer: true },
     { label: "已實現總損益", value: fmtCurrency(realTotalPnL), sub: (pm ? "期間" : "") + "已實現總損益率 " + fmtPercent(realTotalRate), border: KPI_BORDERS[5], cls: valCls(realTotalPnL), chartView: "realized_detail", subTooltip: "已實現總損益率 = 已實現總損益 / 總資本" },
     { label: "未實現總損益", value: fmtCurrency(unrealTotalPnL), sub: "未實現總損益率 " + fmtPercent(unrealTotalRate), border: KPI_BORDERS[4], cls: valCls(unrealTotalPnL), chartView: "unrealized", tooltip: "未實現總損益 = 持倉市值 - 持倉成本", subTooltip: pm ? "未實現總損益率 = 未實現總損益 / 期間總資本" : "未實現總損益率 = 未實現總損益 / 總資本" },
