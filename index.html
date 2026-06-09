@@ -815,18 +815,12 @@ function renderPerfKPI() {
 var _perfTrendChartInst = null;
 function renderPerfTrendChart() {
   var market = document.getElementById('marketFilter') ? document.getElementById('marketFilter').value : '美股';
-  var wrap = document.getElementById('perfTrendChartWrap');
-  if (market === '台股') {
-    if (wrap) wrap.style.display = 'none';
-    if (_perfTrendChartInst) { _perfTrendChartInst.destroy(); _perfTrendChartInst = null; }
-    return;
-  }
-  if (wrap) wrap.style.display = '';
-
-  var d1 = PERF_DATA_US1;
+  var d1 = (market === '台股') ? PERF_DATA_TW1 : PERF_DATA_US1;
   var dateTo = document.getElementById('dateTo') ? document.getElementById('dateTo').value : '';
   var title = document.getElementById('perfTrendTitle');
-  if (title) title.textContent = '公司總體獲利率 趨勢（2026/01/01起・美股）';
+  if (title) {
+    title.textContent = '公司總體獲利率 趨勢（' + (market === '台股' ? '2026/01/01起・台股' : '2026/01/01起・美股') + '）';
+  }
 
   var rows = (d1 || []).filter(function(r) {
     return r.perfRate != null && (!dateTo || r.date <= dateTo);
