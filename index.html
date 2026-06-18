@@ -2283,6 +2283,8 @@ function renderStocksTable(market) {
 // 財產交易所得 = 出售收入 - 出售成本（已處分股票的資本利得）
 // 營利所得     = 配息（股利收入）
 // currency 決定幣別：USD = 海外所得（美股）、TWD = 台股所得；成本法採加權平均成本法
+// 帳戶名正規化：把「劉亮吟(交割戶)」併入「劉亮吟」（交割戶屬同一人的台股交割子戶，所得需合計）
+function normAcct(name) { return (name || "").replace(/\(交割戶\)/g, ""); }
 function computeIncomeByAccount(year, currency) {
   var acc = {};
   function ensure(bank, account) {
@@ -2306,7 +2308,7 @@ function computeIncomeByAccount(year, currency) {
     var ticker = t["Ticker"], dir = t["方向"];
     var shares = num(t["股數"]), amount = num(t["成交金額"]), newShares = num(t["分割/反分割後新股"]);
     var dt = t["日期"] ? new Date(t["日期"]) : null;
-    var bank = t["銀行"] || "", account = t["帳戶名"] || "";
+    var bank = t["銀行"] || "", account = normAcct(t["帳戶名"]);
     if (!ticker || !dt) return;
     var qk = bank + "-" + account + "|" + ticker;
     if (!pos[qk]) pos[qk] = { shares: 0, totalCost: 0 };
@@ -2330,7 +2332,7 @@ function computeIncomeByAccount(year, currency) {
     if ((ae["幣別"] || "") !== currency) return;
     var dt = ae["日期"] ? new Date(ae["日期"]) : null;
     if (!inYear(dt)) return;
-    ensure(ae["銀行"] || "", ae["帳戶名"] || "").dividend += num(ae["金額"]);
+    ensure(ae["銀行"] || "", normAcct(ae["帳戶名"])).dividend += num(ae["金額"]);
   });
 
   return acc;
@@ -2390,7 +2392,7 @@ function renderIncomeTable(currency, year, yearVar, label) {
   var holdMap = {};
   (DATA.equity_by_account || []).forEach(function(e) {
     if ((e["市場"] || "") !== holdMkt) return;
-    var hk = (e["銀行"] || "") + "-" + (e["帳戶名"] || "");
+    var hk = (e["銀行"] || "") + "-" + normAcct(e["帳戶名"]);
     if (!holdMap[hk]) holdMap[hk] = { mv: 0, cost: 0 };
     holdMap[hk].mv   += num(e["持倉市值"]);
     holdMap[hk].cost += num(e["持有成本總額"]);
