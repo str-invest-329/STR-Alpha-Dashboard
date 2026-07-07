@@ -22,7 +22,9 @@
 //   利息與股息(Income)                    = SUM(利息 + 配息 + 定存利息 + ...)    ← 所有持有期間的被動收入
 //   什支(Expenses)                  = SUM(什支類交易的金額絕對值)           ← 軟體費用等非投資支出
 //   定存(Time Deposits)             = SUM(定存存入) - SUM(定存到期)        ← 當前鎖定的定存金額
-//   可用現金(Available Cash)        = 總資本 - 持倉成本 + 已實現損益 + 利息與股息 - 定存 - 什支
+//   可用現金(Available Cash)        = 總資本 + 股票買賣現金(帳戶事件表 買股/賣股) + 利息與股息 - 定存 - 什支
+//       （股票買賣現金依「帳戶事件表」的帳戶名歸帳，確保交割戶/主帳戶現金分配正確；
+//        數學上等價於 總資本 - 持倉成本 + 已實現損益 + ...，但分帳更精準）
 //   持倉市值(Market Value)          = 該帳戶持有股票的現價 × 股數 加總
 //   總負債(Total Debt)              = SUM(DEBT_TYPES 交易)                 ← 融資等借入資金（目前為0）
 //   NAV(Net Asset Value)            = 總資產 - 總負債                      ← 扣除負債後的真實淨值
@@ -446,7 +448,7 @@ function calcAccountStatus(accountEvents, equityByAcct, accountConfig) {
       if (!accounts[key]) {
         accounts[key] = {
           bank: bank, account: account, currency: currency,
-          capital: 0, invested: 0, realizedPnL: 0, interest: 0, deposit: 0, expense: 0, debt: 0, cash: 0
+          capital: 0, invested: 0, realizedPnL: 0, interest: 0, deposit: 0, expense: 0, debt: 0, cash: 0, stockCash: 0
         };
       }
     }
@@ -469,7 +471,7 @@ function calcAccountStatus(accountEvents, equityByAcct, accountConfig) {
     if (!accounts[key]) {
       accounts[key] = {
         bank: bank, account: account, currency: currency,
-        capital: 0, invested: 0, realizedPnL: 0, interest: 0, deposit: 0, expense: 0, debt: 0, cash: 0
+        capital: 0, invested: 0, realizedPnL: 0, interest: 0, deposit: 0, expense: 0, debt: 0, cash: 0, stockCash: 0
       };
     }
     var a = accounts[key];
@@ -497,6 +499,13 @@ function calcAccountStatus(accountEvents, equityByAcct, accountConfig) {
     if (CONFIG.DEBT_TYPES.indexOf(type) >= 0) {
       a.debt += amount; // 融資為正（借入），還融資為負（歸還）
     }
+
+    // 股票買賣現金 = SUM(買股/賣股 金額)（買股為負、賣股為正）
+    // 依「帳戶事件表」的帳戶名歸帳，作為可用現金的股票現金來源，
+    // 確保走交割戶的成交款項算進交割戶、而非主帳戶（IGNORE_TYPES = 買股/賣股）
+    if (CONFIG.IGNORE_TYPES.indexOf(type) >= 0) {
+      a.stockCash += amount;
+    }
   }
 
   // 從股票狀態取得投入金額和已實現損益
@@ -511,10 +520,13 @@ function calcAccountStatus(accountEvents, equityByAcct, accountConfig) {
     }
   }
 
-  // 可用現金 = 資本額 - 投入金額 + 已實現損益 + 利息/配息 - 定存 - 什支
+  // 可用現金 = 資本額 + 股票買賣現金(帳戶事件表 買股/賣股) + 利息/配息 - 定存 - 什支
+  // 註：股票現金改用帳戶事件表的買股/賣股逐帳戶歸帳（a.stockCash），取代原本以
+  //     「- 投入金額 + 已實現損益」反推的方式；兩者全帳戶加總相等，但分帳更精準，
+  //     可正確區分交割戶與主帳戶的現金。invested / realizedPnL 仍供其他指標使用。
   for (var key in accounts) {
     var a = accounts[key];
-    a.cash = a.capital - a.invested + a.realizedPnL + a.interest - a.deposit - a.expense;
+    a.cash = a.capital + a.stockCash + a.interest - a.deposit - a.expense;
   }
 
   return accounts;
