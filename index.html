@@ -2353,6 +2353,9 @@ function computeIncomeByAccount(year, currency) {
     var dt = t["日期"] ? new Date(t["日期"]) : null;
     var bank = t["銀行"] || "", account = normAcct(t["帳戶名"]);
     if (!ticker || !dt) return;
+    // 只要該幣別有交易就先建立帳戶列（金額留 0），否則「只買未賣、也沒配息」的帳戶
+    // 會整列消失，連帶持倉市值/成本也不會計入合計
+    ensure(bank, account);
     var qk = bank + "-" + account + "|" + ticker;
     if (!pos[qk]) pos[qk] = { shares: 0, totalCost: 0 };
     var p = pos[qk];
@@ -2418,7 +2421,7 @@ function renderIncomeTable(currency, year, yearVar, label) {
     window[yearVar] = year;
   }
 
-  // 主帳戶清單：全期有該幣別活動者（固定列，切年度只變數字），逐人逐銀行排序
+  // 主帳戶清單：全期有該幣別活動者（含只買未賣者；固定列，切年度只變數字），逐人逐銀行排序
   var allAcc = computeIncomeByAccount("ALL", currency);
   var yrAcc  = computeIncomeByAccount(year, currency);
 
@@ -2466,7 +2469,7 @@ function renderIncomeTable(currency, year, yearVar, label) {
     '<th class="right">持倉市值</th><th class="right">持倉成本</th></tr>';
 
   if (list.length === 0) {
-    html += '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">此幣別目前無已處分紀錄</td></tr>';
+    html += '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">此幣別目前無交易紀錄</td></tr>';
     return html + '</table>';
   }
 
