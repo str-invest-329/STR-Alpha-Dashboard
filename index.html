@@ -1092,6 +1092,10 @@ function computeFIFOPeriodPnLMaps(f, fromDate, toDate) {
         result.byTicker[ticker] = (result.byTicker[ticker] || 0) + pnl;
         result.byAcctTicker[queueKey] = (result.byAcctTicker[queueKey] || 0) + pnl;
       }
+    } else if (dir === "股票股利") {
+      // 股票股利：持有總成本不變，股數改為「分割/反分割後新股」欄的配發後總股數，
+      // 單位平均成本自動下降（效果等同分割）
+      pos.shares = newShares > 0 ? newShares : pos.shares + shares;
     } else if (newShares > 0 && dir !== "買" && dir !== "賣") {
       if (pos.shares > 0 && newShares !== pos.shares) pos.shares = newShares;
     }
@@ -1151,6 +1155,11 @@ function computeFIFORealizedPnL(f, fromDate, toDate, includedKeys) {
       if (dt >= fromDate && dt <= toDate) {
         periodPnL += (amount - costBasis);
       }
+
+    } else if (dir === "股票股利") {
+      // 股票股利：持有總成本不變，股數改為「分割/反分割後新股」欄的配發後總股數，
+      // 單位平均成本自動下降（效果等同分割）
+      pos.shares = newShares > 0 ? newShares : pos.shares + shares;
 
     } else if (newShares > 0 && dir !== "買" && dir !== "賣") {
       // 分割/反分割：totalCost 不變，股數調整（每股成本自動降低/升高）
@@ -2315,7 +2324,7 @@ function toggleNoPos(row) {
 
 // ===== 所得分頁：逐帳戶 出售收入 / 出售成本 / 財產交易所得 / 營利所得 =====
 // 財產交易所得 = 出售收入 - 出售成本（已處分股票的資本利得）
-// 營利所得     = 配息（股利收入）
+// 營利所得     = 配息（現金股利，帳戶事件表）+ 股票股利（股票事件表，配發股數 × 面額）
 // currency 決定幣別：USD = 海外所得（美股）、TWD = 台股所得；成本法採加權平均成本法
 // 帳戶名正規化：把「劉亮吟(交割戶)」併入「劉亮吟」（交割戶屬同一人的台股交割子戶，所得需合計）
 function normAcct(name) { return (name || "").replace(/\(交割戶\)/g, ""); }
@@ -2354,6 +2363,12 @@ function computeIncomeByAccount(year, currency) {
       var costBasis = avg * shares;
       p.shares -= shares; p.totalCost = avg * p.shares;
       if (inYear(dt)) { var r = ensure(bank, account); r.proceeds += amount; r.cost += costBasis; }
+    } else if (dir === "股票股利") {
+      // 股票股利：持有總成本不變，股數改為「分割/反分割後新股」欄的配發後總股數，
+      // 單位平均成本自動下降（效果等同分割）
+      // 成交金額（配發股數 × 面額）不計入成本，只認列為營利所得
+      p.shares = newShares > 0 ? newShares : p.shares + shares;
+      if (inYear(dt)) ensure(bank, account).dividend += amount;
     } else if (newShares > 0 && dir !== "買" && dir !== "賣") {
       // 分割/反分割：totalCost 不變，股數調整
       if (p.shares > 0 && newShares !== p.shares) p.shares = newShares;
@@ -2382,10 +2397,11 @@ function renderIncomeTable(currency, year, yearVar, label) {
     return '<div class="loading">載入中...</div>';
   }
 
-  // 年度選項：從該幣別的賣出 + 配息蒐集出現過的年份（先算，才能決定預設年度）
+  // 年度選項：從該幣別的賣出 + 股票股利 + 配息蒐集出現過的年份（先算，才能決定預設年度）
   var yearSet = {};
   (cachedAllTradeEvents || []).forEach(function(t) {
-    if ((t["幣別"] || "") !== currency || t["方向"] !== "賣") return;
+    if ((t["幣別"] || "") !== currency) return;
+    if (t["方向"] !== "賣" && t["方向"] !== "股票股利") return;
     var dt = t["日期"] ? new Date(t["日期"]) : null;
     if (dt && !isNaN(dt)) yearSet[dt.getFullYear()] = true;
   });

@@ -330,6 +330,13 @@ function calcPositions(trades) {
 
         if (holdQty <= 0) { holdQty = 0; holdCost = 0; avgCost = 0; }
 
+      } else if (t.direction === "股票股利") {
+        // 股票股利：持有總成本不變，股數改為「分割/反分割後新股」欄的配發後總股數，
+        // 單位平均成本自動下降（效果等同分割）；不影響已實現損益。
+        // 該列的成交金額（配發股數 × 面額）只作為營利所得用，不計入成本。
+        holdQty = t.splitQty > 0 ? t.splitQty : holdQty + Math.abs(t.qty);
+        avgCost = holdQty > 0 ? holdCost / holdQty : 0;
+
       } else if (t.direction === "分割" || t.direction === "正分割" || t.direction === "反分割") {
         // 股票分割／反分割：總成本不變，股數改為「分割/反分割後新股」欄的數值，重算平均成本
         // 不影響已實現損益
