@@ -44,7 +44,7 @@ var STATUS_BOARDS = {
       "未實現股票損益": "numeric_mm1skabc", "未實現股票損益率": "text_mm1sehct",
       "已實現總損益": "numeric_mm1sa0zp", "已實現總損益率": "text_mm1sax8n",
       "已實現股票損益": "numeric_mm1s71sw",
-      "利息與股息": "numeric_mm1sa1nj", "什支": "numeric_mm1sjcz",
+      "利息與股息": "numeric_mm1sa1nj", "什支": "numeric_mm1sjcz", "其他": "numeric_mm6sb795",
       "持倉成本": "numeric_mm1sy7b2", "持倉市值": "numeric_mm1sh8cv",
       "可用現金": "numeric_mm1s5bwf", "定存": "numeric_mm1sm0nw"
     }
@@ -83,7 +83,7 @@ var STATUS_BOARDS = {
       "未實現股票損益": "numeric_mm1sd3a5", "未實現股票損益率": "text_mm1s3dy1",
       "已實現總損益": "numeric_mm1s13pc", "已實現總損益率": "text_mm1s5tf5",
       "已實現股票損益": "numeric_mm1sqz97",
-      "利息與股息": "numeric_mm1sfhmp", "什支": "numeric_mm1s89cc",
+      "利息與股息": "numeric_mm1sfhmp", "什支": "numeric_mm1s89cc", "其他": "numeric_mm6s5vnj",
       "持倉成本": "numeric_mm1sqect", "持倉市值": "numeric_mm1snwfk",
       "可用現金": "numeric_mm1sj9sm", "定存": "numeric_mm1sr3fx"
     }

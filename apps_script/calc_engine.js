@@ -20,9 +20,10 @@
 //   持倉成本(Position Cost)         = SUM(持有中股票的成本總額)             ← 目前投入股票的金額
 //   已實現損益(Capital Gains)         = SUM(所有賣出交易的損益)              ← 買賣股票的已確定盈虧
 //   利息與股息(Income)                    = SUM(利息 + 配息 + 定存利息 + ...)    ← 所有持有期間的被動收入
+//   其他收入(Other Income)          = SUM(其他類交易金額)                   ← 畸零股退還/手續費退還等，計入現金但不計入資本與損益
 //   什支(Expenses)                  = SUM(什支類交易的金額絕對值)           ← 軟體費用等非投資支出
 //   定存(Time Deposits)             = SUM(定存存入) - SUM(定存到期)        ← 當前鎖定的定存金額
-//   可用現金(Available Cash)        = 總資本 + 股票買賣現金(帳戶事件表 買股/賣股) + 利息與股息 - 定存 - 什支
+//   可用現金(Available Cash)        = 總資本 + 股票買賣現金(帳戶事件表 買股/賣股) + 利息與股息 + 其他收入 - 定存 - 什支
 //       （股票買賣現金依「帳戶事件表」的帳戶名歸帳，確保交割戶/主帳戶現金分配正確；
 //        數學上等價於 總資本 - 持倉成本 + 已實現損益 + ...，但分帳更精準）
 //   持倉市值(Market Value)          = 該帳戶持有股票的現價 × 股數 加總
@@ -95,20 +96,22 @@ var CONFIG = {
   DEBT_TYPES: ["融資", "還融資"],
   DEPOSIT_IN_TYPES: ["定存存入"],
   DEPOSIT_OUT_TYPES: ["定存到期"],
-  IGNORE_TYPES: ["買股", "賣股"]
+  IGNORE_TYPES: ["買股", "賣股"],
+  OTHER_TYPES: ["其他"]
 };
 
 // ===== 從事件類型設定表讀取分類 =====
 // 讀取「事件類型設定表」，覆蓋 CONFIG 中的硬編碼分類
 // 分類對應：資本→CAPITAL_TYPES, 利息→INTEREST_TYPES, 支出→EXPENSE_TYPES,
-//           負債→DEBT_TYPES, 定存+→DEPOSIT_IN_TYPES, 定存-→DEPOSIT_OUT_TYPES, 忽略→IGNORE_TYPES
+//           負債→DEBT_TYPES, 定存+→DEPOSIT_IN_TYPES, 定存-→DEPOSIT_OUT_TYPES,
+//           忽略→IGNORE_TYPES, 其他→OTHER_TYPES
 function loadEventTypeConfig(ss) {
   var sheet = readSheet(ss, CONFIG.SOURCE.EVENT_TYPE_CONFIG);
   if (!sheet) return; // 讀不到就用 fallback
 
   var categoryMap = {
     "資本": [], "利息": [], "支出": [], "負債": [],
-    "定存轉入": [], "定存轉出": [], "忽略": []
+    "定存轉入": [], "定存轉出": [], "忽略": [], "其他": []
   };
 
   for (var i = 0; i < sheet.data.length; i++) {
@@ -130,6 +133,7 @@ function loadEventTypeConfig(ss) {
     CONFIG.DEPOSIT_IN_TYPES = categoryMap["定存轉入"];
     CONFIG.DEPOSIT_OUT_TYPES = categoryMap["定存轉出"];
     CONFIG.IGNORE_TYPES = categoryMap["忽略"];
+    CONFIG.OTHER_TYPES = categoryMap["其他"];
   }
 }
 
@@ -142,7 +146,7 @@ function validateEventTypes(accountEvents) {
   var allKnown = [].concat(
     CONFIG.CAPITAL_TYPES, CONFIG.INTEREST_TYPES, CONFIG.EXPENSE_TYPES,
     CONFIG.DEBT_TYPES, CONFIG.DEPOSIT_IN_TYPES, CONFIG.DEPOSIT_OUT_TYPES,
-    CONFIG.IGNORE_TYPES
+    CONFIG.IGNORE_TYPES, CONFIG.OTHER_TYPES
   );
 
   var unknown = {};
@@ -455,7 +459,7 @@ function calcAccountStatus(accountEvents, equityByAcct, accountConfig) {
       if (!accounts[key]) {
         accounts[key] = {
           bank: bank, account: account, currency: currency,
-          capital: 0, invested: 0, realizedPnL: 0, interest: 0, deposit: 0, expense: 0, debt: 0, cash: 0, stockCash: 0
+          capital: 0, invested: 0, realizedPnL: 0, interest: 0, deposit: 0, expense: 0, debt: 0, cash: 0, stockCash: 0, other: 0
         };
       }
     }
@@ -513,6 +517,12 @@ function calcAccountStatus(accountEvents, equityByAcct, accountConfig) {
     if (CONFIG.IGNORE_TYPES.indexOf(type) >= 0) {
       a.stockCash += amount;
     }
+
+    // 其他 = SUM(其他類金額)（畸零股退還、手續費退還等）
+    // 計入可用現金（真實入帳的現金），但不計入總資本、不計入已實現損益/利息/股息
+    if (CONFIG.OTHER_TYPES.indexOf(type) >= 0) {
+      a.other += amount;
+    }
   }
 
   // 從股票狀態取得投入金額和已實現損益
@@ -533,7 +543,7 @@ function calcAccountStatus(accountEvents, equityByAcct, accountConfig) {
   //     可正確區分交割戶與主帳戶的現金。invested / realizedPnL 仍供其他指標使用。
   for (var key in accounts) {
     var a = accounts[key];
-    a.cash = a.capital + a.stockCash + a.interest - a.deposit - a.expense;
+    a.cash = a.capital + a.stockCash + a.interest + a.other - a.deposit - a.expense;
   }
 
   return accounts;
@@ -700,7 +710,7 @@ function aggregateByMarket(accountStatus, equityByAcct, investmentMap) {
     if (!markets[market]) {
       markets[market] = {
         market: market, capital: 0, invested: 0, realizedPnL: 0,
-        interest: 0, expense: 0, deposit: 0, cash: 0, debt: 0, marketValue: 0, unrealizedPnL: 0
+        interest: 0, expense: 0, other: 0, deposit: 0, cash: 0, debt: 0, marketValue: 0, unrealizedPnL: 0
       };
     }
 
@@ -710,6 +720,7 @@ function aggregateByMarket(accountStatus, equityByAcct, investmentMap) {
     m.realizedPnL += a.realizedPnL;
     m.interest += a.interest;
     m.expense += a.expense;
+    m.other += a.other;
     m.deposit += a.deposit;
     m.cash += a.cash;
     m.debt += a.debt;
@@ -851,7 +862,7 @@ function writeAccountStatus(ss, accountStatus) {
       a.unrealizedTotalPnL, a.unrealizedTotalRate,
       a.unrealizedPnL, a.unrealizedEquityRate,
       a.realizedTotalPnL, a.realizedTotalRate,
-      a.realizedPnL, a.interest, a.expense,
+      a.realizedPnL, a.interest, a.expense, a.other,
       a.invested, a.marketValue,
       a.cash, a.deposit
     ]);
@@ -869,7 +880,7 @@ function writeAccountStatus(ss, accountStatus) {
      "未實現總損益", "未實現總損益率",
      "未實現股票損益", "未實現股票損益率",
      "已實現總損益", "已實現總損益率",
-     "已實現股票損益", "利息與股息", "什支",
+     "已實現股票損益", "利息與股息", "什支", "其他",
      "持倉成本", "持倉市值",
      "可用現金", "定存"],
     rows
@@ -890,7 +901,7 @@ function writeMarketStatus(ss, marketStatus) {
       m.unrealizedTotalPnL, m.unrealizedTotalRate,
       m.unrealizedPnL, m.unrealizedEquityRate,
       m.realizedTotalPnL, m.realizedTotalRate,
-      m.realizedPnL, m.interest, m.expense,
+      m.realizedPnL, m.interest, m.expense, m.other,
       m.invested, m.marketValue,
       m.cash, m.deposit
     ]);
@@ -904,7 +915,7 @@ function writeMarketStatus(ss, marketStatus) {
      "未實現總損益", "未實現總損益率",
      "未實現股票損益", "未實現股票損益率",
      "已實現總損益", "已實現總損益率",
-     "已實現股票損益", "利息與股息", "什支",
+     "已實現股票損益", "利息與股息", "什支", "其他",
      "持倉成本", "持倉市值",
      "可用現金", "定存"],
     rows
